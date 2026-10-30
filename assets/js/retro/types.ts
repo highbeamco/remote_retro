@@ -73,7 +73,10 @@ export type TimerCommand = { command: "start" | "pause" | "reset" } | { command:
 
 export interface Snapshot {
   retro: Retro
-  /** Whether AI grouping is configured on the server. */
+  /**
+   * Whether this viewer may use AI. Present on the join snapshot only;
+   * room-wide broadcasts omit it so it isn't shared across the room.
+   */
   ai_enabled?: boolean
   timer?: TimerState
   users: User[]

@@ -21,4 +21,14 @@ describe("store", () => {
     expect(state.retro?.stage).toBe("grouping")
     expect(state.ideas.entities[2]).toMatchObject({ group_id: 9, x: 10, y: 20 })
   })
+
+  it("keeps this viewer's AI access when a later snapshot omits it", () => {
+    const store = makeStore()
+    store.dispatch(snapshotReceived({ ...snapshot, ai_enabled: true }))
+    expect(store.getState().ui.aiEnabled).toBe(true)
+    store.dispatch(snapshotReceived(snapshot))
+    expect(store.getState().ui.aiEnabled).toBe(true)
+    store.dispatch(snapshotReceived({ ...snapshot, ai_enabled: false }))
+    expect(store.getState().ui.aiEnabled).toBe(false)
+  })
 })

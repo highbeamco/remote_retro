@@ -19,7 +19,7 @@ Dev sign-in without Google: `http://localhost:4000/dev/login?email=you@example.c
 ## Architecture
 
 - `lib/remote_retro/` — domain contexts: `Accounts`, `Retros` (stage machine `change_stage/3`, snapshot), `Ideas`, `Groups` (`sync/1` reconciles overlap clusters into persisted groups), `Votes` (3 per user), `Grouping` (pure AABB clustering), `Layout`, `Stages`, `Timer` (pure stage-countdown state; persisted on the retro, reset on every stage change), `Formats`, `Broadcast`.
-- `lib/remote_retro/ai/` — Gemini via Vertex AI (`Gemini` client over Req + Goth ADC, `Prompts`, `Apply`, `TaskRunner`). `AI.Runner`/`AI.Client` are behaviours mocked with Mox in tests. Off unless `GCP_PROJECT` is set; while running, `retros.ai_status` blocks mutations.
+- `lib/remote_retro/ai/` — Gemini via Vertex AI (`Gemini` client over Req + Goth ADC, `Prompts`, `Apply`, `TaskRunner`). `AI.Runner`/`AI.Client` are behaviours mocked with Mox in tests. Off unless `GCP_PROJECT` is set, and only facilitators in `AI_ALLOWED_DOMAINS` (unset = nobody; see `RemoteRetro.AI.Access`) may trigger a pass. While running, `retros.ai_status` blocks mutations.
 - `lib/remote_retro_web/channels/retro_channel.ex` — one `handle_in` per event; every lookup is scoped to the joined retro. Join replies with a full snapshot; stage changes broadcast `snapshot`.
 - `assets/js/retro/` — React room: `types.ts` (wire contract), `channel.ts`, `store/` (RTK slices, selectors, thunks, `bind_channel.ts`), `stages.tsx` registry + `stages/*`, `components/*`, `board/*` (custom pointer-event pan/zoom canvas, sticky drag, floating group labels).
 - HEEx pages (landing, retros list, FAQ, privacy) under `lib/remote_retro_web/controllers/*_html/`.

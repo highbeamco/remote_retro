@@ -21,8 +21,17 @@ defmodule RemoteRetroWeb.AuthController do
   def dev_login(conn, %{"email" => email} = params) do
     name = params["name"] || email |> String.split("@") |> hd() |> String.capitalize()
 
+    # No Google assertion on this route (it isn't compiled into the prod router).
+    # Marking the email verified lets the domain fallback in AI.Access apply, so
+    # a dev login on a domain listed in AI_ALLOWED_DOMAINS can exercise AI locally.
     sign_in(
-      %{"email" => email, "name" => name, "given_name" => name, "picture" => params["picture"]},
+      %{
+        "email" => email,
+        "name" => name,
+        "given_name" => name,
+        "picture" => params["picture"],
+        "email_verified" => true
+      },
       conn
     )
   end

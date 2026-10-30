@@ -23,6 +23,7 @@ const REASON_MESSAGES: Record<string, string> = {
   invalid_stage: "That isn't possible in the current stage.",
   ai_busy: "Ideas are still being grouped. Try again in a moment.",
   ai_disabled: "AI grouping isn't set up on this server.",
+  ai_forbidden: "AI grouping isn't available for this account.",
   regroup_limit: "Grouping can only be re-run twice per retro.",
   timer_changed: "The timer changed. Try again.",
   vote_limit: `You've already used all ${VOTE_LIMIT} votes.`,

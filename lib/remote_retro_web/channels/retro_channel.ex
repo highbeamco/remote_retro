@@ -20,7 +20,7 @@ defmodule RemoteRetroWeb.RetroChannel do
          %Accounts.User{} = user <- Accounts.get_user(socket.assigns.user_id) do
       :ok = Retros.participate(retro, user.id)
       send(self(), :after_join)
-      {:ok, Retros.snapshot(retro.id), assign(socket, retro_id: retro.id, user: user)}
+      {:ok, Retros.snapshot(retro.id, user), assign(socket, retro_id: retro.id, user: user)}
     else
       nil -> {:error, %{reason: "not_found"}}
     end

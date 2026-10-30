@@ -107,7 +107,11 @@ docker run --rm -v ~/.config/gcloud-remote-retro:/root/.config/gcloud \
 
 On the project, enable the **Vertex AI API** and give the account you signed in with the
 **Vertex AI User** role (`roles/aiplatform.user`). Then add `export GCP_PROJECT=<PROJECT_ID>`
-to `env.sh` and recreate the app container. While Gemini works, the room shows an overlay
+to `env.sh` and recreate the app container. AI still only runs for accounts in
+`AI_ALLOWED_DOMAINS` (unset or empty means nobody): Google must have verified the
+email, and either the Workspace hosted domain (`hd`) is in that list or Google
+didn't send one and the email's own domain is. Sign in again after this ships so
+the claim is stored. While Gemini works, the room shows an overlay
 and blocks edits; if it fails or takes longer than 45s, the room unblocks and carries on.
 
 ## Configuration reference
@@ -116,6 +120,7 @@ and blocks edits; if it fails or takes longer than 45s, the room unblocks and ca
 |---|---|
 | `REMOTE_RETRO_GOOGLE_OAUTH_CLIENT_ID` / `_SECRET` / `_REDIRECT_URI` | Google sign-in |
 | `GCP_PROJECT` | Enables Gemini grouping (unset = off) |
+| `AI_ALLOWED_DOMAINS` | Comma-separated Google Workspace domains that may use AI. Unset or empty allows nobody |
 | `GCP_LOCATION` | Vertex AI location, default `global` |
 | `GEMINI_MODEL` | Default `gemini-2.5-flash` |
 | `GOOGLE_APPLICATION_CREDENTIALS` | ADC file (service account, user, or impersonated). Set by the dev container; on Cloud Run omit it to use the attached service account |

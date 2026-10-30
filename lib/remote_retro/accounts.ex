@@ -3,6 +3,7 @@ defmodule RemoteRetro.Accounts do
   import Ecto.Query
   alias RemoteRetro.Repo
   alias RemoteRetro.Accounts.User
+  alias RemoteRetro.AI.Access
 
   def get_user(id), do: Repo.get(User, id)
   def get_user!(id), do: Repo.get!(User, id)
@@ -21,8 +22,12 @@ defmodule RemoteRetro.Accounts do
       last_login_at: DateTime.utc_now()
     }
 
+    claims = Access.claims_from_google(info)
+
     (get_user_by_email(email) || %User{})
     |> User.changeset(attrs)
+    |> Ecto.Changeset.put_change(:email_verified, claims.email_verified)
+    |> Ecto.Changeset.put_change(:hosted_domain, claims.hosted_domain)
     |> Repo.insert_or_update()
   end
 

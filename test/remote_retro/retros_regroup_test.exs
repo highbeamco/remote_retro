@@ -11,7 +11,7 @@ defmodule RemoteRetro.RetrosRegroupTest do
   setup do
     previous = Application.get_env(:remote_retro, :ai)
     on_exit(fn -> Application.put_env(:remote_retro, :ai, previous) end)
-    facilitator = user_fixture()
+    facilitator = highbeam_user_fixture()
 
     %{
       facilitator: facilitator,
@@ -20,7 +20,8 @@ defmodule RemoteRetro.RetrosRegroupTest do
     }
   end
 
-  defp enable_ai, do: Application.put_env(:remote_retro, :ai, enabled: true)
+  defp enable_ai,
+    do: Application.put_env(:remote_retro, :ai, enabled: true, allowed_domains: ["highbeam.co"])
 
   test "facilitator only, in Group & label, while the AI is idle", %{
     facilitator: f,
@@ -36,6 +37,37 @@ defmodule RemoteRetro.RetrosRegroupTest do
   test "reports when AI isn't configured", %{facilitator: f, retro: retro} do
     Application.put_env(:remote_retro, :ai, enabled: false)
     assert {:error, :ai_disabled} = Retros.regroup(retro, f.id)
+  end
+
+  test "rejects a facilitator whose account isn't allowed to use AI", %{facilitator: f} do
+    enable_ai()
+    outsider = user_fixture(%{"email" => "ada@gmail.com", "email_verified" => true})
+    outsider_retro = retro_fixture(outsider, %{stage: "grouping"})
+
+    assert {:error, :ai_forbidden} = Retros.regroup(outsider_retro, outsider.id)
+    # A colleague who is allowed doesn't unlock it for this facilitator.
+    :ok = Retros.participate(outsider_retro, f.id)
+    assert {:error, :ai_forbidden} = Retros.regroup(outsider_retro, outsider.id)
+
+    unverified =
+      user_fixture(%{
+        "email" => "pat@highbeam.co",
+        "email_verified" => false,
+        "hd" => "highbeam.co"
+      })
+
+    unverified_retro = retro_fixture(unverified, %{stage: "grouping"})
+    assert {:error, :ai_forbidden} = Retros.regroup(unverified_retro, unverified.id)
+
+    aliased =
+      user_fixture(%{
+        "email" => "sam@highbeam.co",
+        "email_verified" => true,
+        "hd" => "other.com"
+      })
+
+    aliased_retro = retro_fixture(aliased, %{stage: "grouping"})
+    assert {:error, :ai_forbidden} = Retros.regroup(aliased_retro, aliased.id)
   end
 
   test "starts a grouping pass even after the first one has run", %{facilitator: f, retro: retro} do

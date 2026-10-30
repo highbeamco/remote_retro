@@ -2,7 +2,6 @@ defmodule RemoteRetroWeb.RetroChannelTest do
   use RemoteRetroWeb.ChannelCase, async: true
   import Mox
   alias RemoteRetro.{Groups, Ideas, Repo, Retros}
-  alias RemoteRetro.AI.RunnerMock
 
   setup :verify_on_exit!
 
@@ -295,10 +294,10 @@ defmodule RemoteRetroWeb.RetroChannelTest do
       }
     end
 
-    test "entering grouping calls the AI runner from the channel", %{facilitator: f} do
+    test "entering grouping does not start AI when the facilitator isn't allow-listed", %{
+      facilitator: f
+    } do
       retro = retro_fixture(f, %{stage: "idea-generation"})
-      id = retro.id
-      expect(RunnerMock, :start, fn :grouping, ^id -> :ok end)
       socket = room(f, retro)
 
       assert_reply push(socket, "retro:stage", %{"stage" => "grouping"}), :ok, _

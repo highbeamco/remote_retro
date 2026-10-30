@@ -2,7 +2,21 @@ defmodule RemoteRetro.Retros do
   @moduledoc "Retros, participation and the full-state snapshot sent to clients."
   require Logger
   import Ecto.Query
-  alias RemoteRetro.{AI, Broadcast, Emails, Formats, Groups, Layout, Mailer, Repo, Stages, Timer}
+
+  alias RemoteRetro.{
+    Accounts,
+    AI,
+    Broadcast,
+    Emails,
+    Formats,
+    Groups,
+    Layout,
+    Mailer,
+    Repo,
+    Stages,
+    Timer
+  }
+
   alias RemoteRetro.Retros.{Retro, Participation}
   alias RemoteRetro.Accounts.User
   alias RemoteRetro.Ideas.Idea
@@ -74,16 +88,19 @@ defmodule RemoteRetro.Retros do
 
   @doc """
   Facilitator-only: re-runs AI grouping in Group & label, at most `max_regroups/0` times per
-  retro. Only ideas that aren't already in a group are considered, so groups people (or an
-  earlier pass) made stay as they are. Returns `{:ok, :started}`, or
-  `{:ok, :nothing_to_group}` when fewer than two ideas are left ungrouped (which doesn't use
-  up a re-run). Errors include `:regroup_limit`.
+  retro. The facilitator must be allowed to use AI (`RemoteRetro.AI.Access`); guests in
+  the room don't matter, and a facilitator who isn't allowed is rejected even if a
+  colleague who is allowed is participating. Only ideas that aren't already in a group
+  are considered, so groups people (or an earlier pass) made stay as they are. Returns
+  `{:ok, :started}`, or `{:ok, :nothing_to_group}` when fewer than two ideas are left
+  ungrouped (which doesn't use up a re-run). Errors include `:regroup_limit` and
+  `:ai_forbidden`.
   """
   def regroup(%Retro{} = retro, actor_id) do
     with :ok <- ensure_facilitator(retro, actor_id),
          :ok <- ensure_stage(retro, "grouping"),
          :ok <- ensure_ai_idle(retro),
-         true <- AI.enabled?() || {:error, :ai_disabled},
+         :ok <- ensure_ai_access(actor_id),
          :ok <- claim_regroup(retro.id) do
       case AI.Runner.start(:grouping, retro.id) do
         # The runner broadcasts the retro (now busy, with the new count) to everyone.
@@ -118,6 +135,26 @@ defmodule RemoteRetro.Retros do
   def ensure_ai_idle(%Retro{ai_status: nil}), do: :ok
   def ensure_ai_idle(%Retro{}), do: {:error, :ai_busy}
 
+  # `:ai_disabled` when Gemini isn't configured, so a missing project isn't reported
+  # as an org mismatch. `:ai_forbidden` when it is configured and this user isn't allowed.
+  defp ensure_ai_access(user_id) do
+    cond do
+      not AI.enabled?() -> {:error, :ai_disabled}
+      ai_member?(user_id) -> :ok
+      true -> {:error, :ai_forbidden}
+    end
+  end
+
+  # Membership only. Callers that talk to the runner let it no-op when Gemini is off.
+  defp ai_member?(user_id) when is_integer(user_id) do
+    case Accounts.get_user(user_id) do
+      %User{} = user -> AI.Access.member?(user)
+      _ -> false
+    end
+  end
+
+  defp ai_member?(_user_id), do: false
+
   def ensure_stage(%Retro{stage: stage}, stages) when is_list(stages),
     do: if(stage in stages, do: :ok, else: {:error, :invalid_stage})
 
@@ -151,9 +188,10 @@ defmodule RemoteRetro.Retros do
   Entering `grouping` lays out unpositioned ideas and syncs groups; moving
   forward from `grouping` to `voting` syncs groups once more. After commit,
   every client gets a fresh `snapshot` and, on entering `grouping`, the AI
-  runner is started for a grouping pass (only until it has succeeded once; the
-  runner decides whether AI is enabled). Groups left unlabeled stay unlabeled:
-  nothing is auto-labeled on the way into `voting`.
+  runner is started for a grouping pass when the facilitator is allowed to use
+  AI and it hasn't succeeded yet (the runner decides whether AI is enabled).
+  Groups left unlabeled stay unlabeled: nothing is auto-labeled on the way into
+  `voting`.
 
   Moving forward into `closed` emails the action items to every participant
   (see `deliver_action_items/1`), in the background unless `:async_mail` is
@@ -167,7 +205,8 @@ defmodule RemoteRetro.Retros do
         with :ok <- ensure_facilitator(retro, actor_id),
              :ok <- ensure_ai_idle(retro),
              :ok <- ensure_adjacent(retro.stage, to_stage),
-             {:ok, updated} <- update_retro(retro, Map.put(Timer.reset_attrs(), :stage, to_stage)),
+             {:ok, updated} <-
+               update_retro(retro, Map.put(Timer.reset_attrs(), :stage, to_stage)),
              :ok <- enter_stage(retro.stage, updated) do
           {:ok, {retro.stage, updated}}
         end
@@ -207,8 +246,16 @@ defmodule RemoteRetro.Retros do
 
   defp enter_stage(_from, %Retro{}), do: :ok
 
-  defp start_ai(_from, %Retro{stage: "grouping", ai_grouped_at: nil, id: id}),
-    do: AI.Runner.start(:grouping, id)
+  # The acting facilitator has to be allowed. Outside participants don't unlock a pass,
+  # and a pass started by an allowed facilitator still updates the whole room.
+  defp start_ai(_from, %Retro{
+         stage: "grouping",
+         ai_grouped_at: nil,
+         facilitator_id: facilitator_id,
+         id: id
+       }) do
+    if ai_member?(facilitator_id), do: AI.Runner.start(:grouping, id), else: :skipped
+  end
 
   defp start_ai(_from, %Retro{}), do: :skipped
 
@@ -360,14 +407,26 @@ defmodule RemoteRetro.Retros do
     )
   end
 
-  @doc "Everything a client needs to render the room."
-  def snapshot(retro_id) do
+  @doc """
+  Everything a client needs to render the room.
+
+  Pass the joining user to include `ai_enabled` for that viewer (Gemini configured
+  and their account may use it). Room-wide broadcasts omit it: the flag is per
+  person, and a later snapshot must not turn AI controls on for someone else.
+  """
+  def snapshot(retro_id, viewer \\ nil)
+
+  def snapshot(retro_id, %User{} = viewer) do
+    retro_id |> snapshot_payload() |> Map.put(:ai_enabled, AI.available_to?(viewer))
+  end
+
+  def snapshot(retro_id, _viewer), do: snapshot_payload(retro_id)
+
+  defp snapshot_payload(retro_id) do
     retro = get_retro!(retro_id)
 
     %{
       retro: retro,
-      # Lets clients hide AI-only controls (e.g. re-run grouping) when AI isn't configured.
-      ai_enabled: AI.enabled?(),
       timer: Timer.view(retro),
       users: list_participants(retro_id),
       ideas: Repo.all(from i in Idea, where: i.retro_id == ^retro_id, order_by: i.id),

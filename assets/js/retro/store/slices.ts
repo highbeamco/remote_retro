@@ -177,7 +177,11 @@ export const uiSlice = createSlice({
   },
   extraReducers: (builder) =>
     builder.addMatcher(isSnapshot, (state, action) => {
-      state.aiEnabled = action.payload.ai_enabled === true
+      // Room-wide snapshots omit this. Only the join reply (per viewer) sets it,
+      // so a broadcast can't turn AI controls on for someone who isn't allowed.
+      if ("ai_enabled" in action.payload) {
+        state.aiEnabled = action.payload.ai_enabled === true
+      }
     }),
 })
 

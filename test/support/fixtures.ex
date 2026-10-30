@@ -18,6 +18,23 @@ defmodule RemoteRetro.Fixtures do
     user
   end
 
+  def highbeam_user_fixture(attrs \\ %{}) do
+    n = System.unique_integer([:positive])
+
+    user_fixture(
+      Map.merge(
+        %{
+          "email" => "user#{n}@highbeam.co",
+          "name" => "Highbeam #{n}",
+          "given_name" => "Highbeam",
+          "email_verified" => true,
+          "hd" => "highbeam.co"
+        },
+        attrs
+      )
+    )
+  end
+
   def retro_fixture(facilitator \\ user_fixture(), attrs \\ %{}) do
     {:ok, retro} = Retros.create_retro(facilitator, attrs[:format] || "happy_sad_confused")
 
