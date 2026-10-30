@@ -126,7 +126,7 @@ and blocks edits; if it fails or takes longer than 45s, the room unblocks and ca
 | `GOOGLE_APPLICATION_CREDENTIALS` | ADC file (service account, user, or impersonated). Set by the dev container; on Cloud Run omit it to use the attached service account |
 | `SENDGRID_API_KEY` | Sends the action-items email on close (prod). Unset = emails are only logged, with a boot warning |
 | `MAIL_FROM` | Sender, e.g. `"Remote Retro" <retro@example.com>`; default `"Remote Retro" <no-reply@remoteretro.local>` (warns in prod) |
-| `DATABASE_URL`, `SECRET_KEY_BASE`, `PHX_HOST`, `PORT` | Standard Phoenix production settings |
+| `DATABASE_URL`, `SECRET_KEY_BASE`, `PHX_HOST`, `PORT` | Standard Phoenix production settings. In prod, a `DATABASE_URL` whose user is a service account ending in `.iam` and that has no password (e.g. `ecto://sa%40project.iam@localhost/db`) uses Cloud SQL IAM database authentication with the service account's access token |
 
 For a tour of the code, see [`CLAUDE.md`](CLAUDE.md).
 
