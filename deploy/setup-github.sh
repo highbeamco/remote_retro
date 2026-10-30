@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# One-time (idempotent): let GitHub Actions in alaycock/remote_retro deploy to Cloud Run
+# One-time (idempotent): let GitHub Actions in highbeamco/remote_retro deploy to Cloud Run
 # via Workload Identity Federation — short-lived tokens, no service account keys.
 # Run via: deploy/run.sh ./deploy/setup-github.sh
 set -euo pipefail
 
 PROJECT="${PROJECT:-hb-remote-retro}"
 REGION="${REGION:-us-central1}"
-GITHUB_REPO="${GITHUB_REPO:-alaycock/remote_retro}"
+GITHUB_REPO="${GITHUB_REPO:-highbeamco/remote_retro}"
 POOL="github"
 PROVIDER="github-oidc"
 DEPLOYER="remote-retro-deployer"

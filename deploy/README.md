@@ -70,7 +70,7 @@ new Cloud Run revision. Only the image changes; env vars, secrets and scaling se
 `deploy.sh` carry over.
 
 GitHub authenticates with **Workload Identity Federation** — no keys stored in GitHub. The
-trust is limited to `alaycock/remote_retro` on `refs/heads/master`, and the deployer service
+trust is limited to `highbeamco/remote_retro` on `refs/heads/master`, and the deployer service
 account can only deploy revisions, act as the runtime service account, and push to the one
 image repository. One-time setup (after the first `deploy.sh`):
 

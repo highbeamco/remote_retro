@@ -147,7 +147,7 @@ defmodule RemoteRetroWeb.Layouts do
     """
   end
 
-  def github_url, do: "https://github.com/alaycock/remote_retro"
+  def github_url, do: "https://github.com/highbeamco/remote_retro"
 
   @doc """
   Theme picker: one icon reflecting the current choice, with a dropdown of
