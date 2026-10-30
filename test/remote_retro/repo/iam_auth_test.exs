@@ -1,6 +1,7 @@
 defmodule RemoteRetro.Repo.IAMAuthTest do
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
+  alias RemoteRetro.AI.Credentials
   alias RemoteRetro.Repo.IAMAuth
 
   test "is off outside prod IAM config, so no token source starts" do
@@ -21,23 +22,29 @@ defmodule RemoteRetro.Repo.IAMAuthTest do
     assert Keyword.delete(configured, :password) == opts
   end
 
-  test "raises, and logs why, when no token can be fetched" do
+  test "logs why, and sets an empty password, when no token can be fetched" do
+    opts = [username: "sa@project.iam"]
+
     log =
       capture_log(fn ->
-        assert_raise RuntimeError, ~r/could not fetch an access token: :timeout/, fn ->
-          IAMAuth.configure([username: "sa@project.iam"], fn -> {:error, :timeout} end)
-        end
+        assert IAMAuth.configure(opts, fn -> {:error, :timeout} end) == [password: ""] ++ opts
       end)
 
     assert log =~ "Cloud SQL IAM auth: could not fetch an access token: :timeout"
   end
 
-  test "raises when the token source isn't running" do
-    capture_log(fn ->
-      assert_raise RuntimeError, ~r/goth_unavailable/, fn ->
-        IAMAuth.configure(username: "sa@project.iam")
-      end
-    end)
+  test "logs why, and sets an empty password, when the token source isn't running" do
+    opts = [username: "sa@project.iam"]
+
+    # The shared Goth may be running here (AI is on when GCP_PROJECT is set), so
+    # fetch from one that never starts.
+    log =
+      capture_log(fn ->
+        assert IAMAuth.configure(opts, fn -> Credentials.token(__MODULE__.Goth) end) ==
+                 [password: ""] ++ opts
+      end)
+
+    assert log =~ "could not fetch an access token: {:goth_unavailable"
   end
 
   test "Postgrex connects with the password the hook supplies" do

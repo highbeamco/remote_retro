@@ -29,8 +29,8 @@ defmodule RemoteRetro.Release do
     start_iam_auth()
   end
 
-  # `eval` doesn't start the app's supervision tree, so start the Cloud SQL IAM
-  # token source (when enabled) that the Repo's `:configure` hook fetches from.
+  # `eval` doesn't start the app's supervision tree, so start the shared Goth
+  # (when Cloud SQL IAM auth is on) that the Repo's `:configure` hook fetches from.
   defp start_iam_auth do
     case RemoteRetro.Repo.IAMAuth.children() do
       [] ->

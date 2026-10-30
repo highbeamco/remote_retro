@@ -1,7 +1,7 @@
 defmodule RemoteRetro.AI.Credentials do
   @moduledoc """
-  Google Application Default Credentials for Vertex AI (and Cloud SQL IAM auth,
-  see `RemoteRetro.Repo.IAMAuth`), backed by Goth.
+  Google Application Default Credentials for Vertex AI and Cloud SQL IAM auth (see
+  `RemoteRetro.Repo.IAMAuth`), backed by one shared Goth (`RemoteRetro.Goth`).
 
   Source resolution (first match wins):
 
@@ -16,12 +16,12 @@ defmodule RemoteRetro.AI.Credentials do
   """
   require Logger
 
-  @goth RemoteRetro.AI.Goth
+  @goth RemoteRetro.Goth
   @scope "https://www.googleapis.com/auth/cloud-platform"
 
   @type impersonation :: %{url: String.t(), delegates: [String.t()]} | nil
 
-  @doc "Goth child for the supervision tree (the AI one only starts when AI is enabled)."
+  @doc "Goth child for the supervision tree (started when AI or Cloud SQL IAM auth is on)."
   def goth_child_spec(name \\ @goth) do
     {source, _impersonation} = resolve()
     # Goth raises after `max_retries` failed refreshes; keep retrying (with its
@@ -29,7 +29,7 @@ defmodule RemoteRetro.AI.Credentials do
     Supervisor.child_spec({Goth, name: name, source: source, max_retries: 1_000}, id: name)
   end
 
-  @doc "Returns a bearer token from the Goth named `name` (Vertex AI's by default)."
+  @doc "Returns a bearer token from the Goth named `name` (the shared one by default)."
   @spec token(term()) :: {:ok, String.t()} | {:error, term()}
   def token(name \\ @goth) do
     with {:ok, %Goth.Token{token: token}} <- fetch_goth(name) do
@@ -52,7 +52,7 @@ defmodule RemoteRetro.AI.Credentials do
 
           {:error, _} ->
             Logger.warning(
-              "AI: could not parse credentials file #{path}; falling back to metadata server"
+              "Google credentials: could not parse credentials file #{path}; falling back to metadata server"
             )
 
             {:metadata, nil}
@@ -78,7 +78,7 @@ defmodule RemoteRetro.AI.Credentials do
 
   def source_for(%{"type" => type}) do
     Logger.warning(
-      "AI: unsupported credentials type #{inspect(type)}; falling back to metadata server"
+      "Google credentials: unsupported credentials type #{inspect(type)}; falling back to metadata server"
     )
 
     {:metadata, nil}
@@ -102,7 +102,10 @@ defmodule RemoteRetro.AI.Credentials do
         env_path
 
       env_path not in [nil, ""] and not File.regular?(gcloud_path) ->
-        Logger.warning("AI: GOOGLE_APPLICATION_CREDENTIALS file not found; using metadata server")
+        Logger.warning(
+          "Google credentials: GOOGLE_APPLICATION_CREDENTIALS file not found; using metadata server"
+        )
+
         nil
 
       File.regular?(gcloud_path) ->
