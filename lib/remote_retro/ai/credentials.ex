@@ -1,6 +1,7 @@
 defmodule RemoteRetro.AI.Credentials do
   @moduledoc """
-  Google Application Default Credentials for Vertex AI, backed by Goth.
+  Google Application Default Credentials for Vertex AI (and Cloud SQL IAM auth,
+  see `RemoteRetro.Repo.IAMAuth`), backed by Goth.
 
   Source resolution (first match wins):
 
@@ -20,18 +21,18 @@ defmodule RemoteRetro.AI.Credentials do
 
   @type impersonation :: %{url: String.t(), delegates: [String.t()]} | nil
 
-  @doc "Goth child for the supervision tree (only started when AI is enabled)."
-  def goth_child_spec do
+  @doc "Goth child for the supervision tree (the AI one only starts when AI is enabled)."
+  def goth_child_spec(name \\ @goth) do
     {source, _impersonation} = resolve()
     # Goth raises after `max_retries` failed refreshes; keep retrying (with its
     # 30s-capped backoff) instead of crash-looping the app when creds are missing.
-    Supervisor.child_spec({Goth, name: @goth, source: source, max_retries: 1_000}, id: @goth)
+    Supervisor.child_spec({Goth, name: name, source: source, max_retries: 1_000}, id: name)
   end
 
-  @doc "Returns a bearer token for Vertex AI."
-  @spec token() :: {:ok, String.t()} | {:error, term()}
-  def token do
-    with {:ok, %Goth.Token{token: token}} <- fetch_goth() do
+  @doc "Returns a bearer token from the Goth named `name` (Vertex AI's by default)."
+  @spec token(term()) :: {:ok, String.t()} | {:error, term()}
+  def token(name \\ @goth) do
+    with {:ok, %Goth.Token{token: token}} <- fetch_goth(name) do
       {_source, impersonation} = resolve()
       maybe_impersonate(token, impersonation)
     end
@@ -112,8 +113,8 @@ defmodule RemoteRetro.AI.Credentials do
     end
   end
 
-  defp fetch_goth do
-    Goth.fetch(@goth)
+  defp fetch_goth(name) do
+    Goth.fetch(name)
   rescue
     e -> {:error, e}
   catch

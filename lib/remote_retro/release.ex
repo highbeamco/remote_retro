@@ -26,5 +26,19 @@ defmodule RemoteRetro.Release do
     # Many platforms require SSL when connecting to the database
     Application.ensure_all_started(:ssl)
     Application.ensure_loaded(@app)
+    start_iam_auth()
+  end
+
+  # `eval` doesn't start the app's supervision tree, so start the Cloud SQL IAM
+  # token source (when enabled) that the Repo's `:configure` hook fetches from.
+  defp start_iam_auth do
+    case RemoteRetro.Repo.IAMAuth.children() do
+      [] ->
+        :ok
+
+      children ->
+        {:ok, _} = Application.ensure_all_started(:goth)
+        {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
+    end
   end
 end

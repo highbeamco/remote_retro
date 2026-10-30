@@ -8,17 +8,18 @@ defmodule RemoteRetro.Application do
   @impl true
   def start(_type, _args) do
     children =
-      [
-        RemoteRetroWeb.Telemetry,
-        RemoteRetro.Repo,
-        {DNSCluster, query: Application.get_env(:remote_retro, :dns_cluster_query) || :ignore},
-        {Phoenix.PubSub, name: RemoteRetro.PubSub},
-        RemoteRetroWeb.Presence,
-        {Task.Supervisor, name: RemoteRetro.AI.TaskSupervisor},
-        {Task.Supervisor, name: RemoteRetro.TaskSupervisor},
-        # Start to serve requests, typically the last entry
-        RemoteRetroWeb.Endpoint
-      ] ++ RemoteRetro.AI.children()
+      [RemoteRetroWeb.Telemetry] ++
+        RemoteRetro.Repo.IAMAuth.children() ++
+        [
+          RemoteRetro.Repo,
+          {DNSCluster, query: Application.get_env(:remote_retro, :dns_cluster_query) || :ignore},
+          {Phoenix.PubSub, name: RemoteRetro.PubSub},
+          RemoteRetroWeb.Presence,
+          {Task.Supervisor, name: RemoteRetro.AI.TaskSupervisor},
+          {Task.Supervisor, name: RemoteRetro.TaskSupervisor},
+          # Start to serve requests, typically the last entry
+          RemoteRetroWeb.Endpoint
+        ] ++ RemoteRetro.AI.children()
 
     # See https://elixir.hexdocs.pm/Supervisor.html
     # for other strategies and supported options

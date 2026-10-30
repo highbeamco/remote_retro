@@ -98,6 +98,13 @@ if config_env() == :prod do
     config :remote_retro, RemoteRetro.Repo, socket_dir: socket_dir
   end
 
+  # Cloud SQL IAM database authentication: with no password in DATABASE_URL (the
+  # user being the service account, e.g. `sa%40project.iam`), log in with a fresh
+  # Google access token on every connect. See RemoteRetro.Repo.IAMAuth.
+  if not String.contains?(URI.parse(database_url).userinfo || "", ":") do
+    config :remote_retro, RemoteRetro.Repo, configure: {RemoteRetro.Repo.IAMAuth, :configure, []}
+  end
+
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
   # want to use a different value for prod and you most likely don't want
