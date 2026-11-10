@@ -21,8 +21,6 @@ export interface Retro {
   stage: Stage
   facilitator_id: number | null
   ai_status: AiStatus
-  /** AI re-groupings used so far (server caps it at MAX_REGROUPS). */
-  ai_regroups?: number
   inserted_at: string
 }
 

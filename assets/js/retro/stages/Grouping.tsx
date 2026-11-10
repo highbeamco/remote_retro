@@ -11,14 +11,13 @@ import {
 import { Board } from "../board/Board"
 import { moveIdea } from "../board/thunks"
 import { CategoryIcon } from "../components/CategoryIcon"
-import { MAX_LABEL_LENGTH, MAX_REGROUPS, cardHeight } from "../constants"
+import { MAX_LABEL_LENGTH, cardHeight } from "../constants"
 import { useAppDispatch, useAppSelector } from "../store/hooks"
 import {
   selectAiStatus,
   selectAllIdeas,
   selectGroupsWithIdeas,
   selectIsFacilitator,
-  selectRetro,
   type GroupWithIdeas,
 } from "../store/selectors"
 import { ideaMovedLocally } from "../store/slices"
@@ -438,9 +437,7 @@ function RegroupButton() {
   const isFacilitator = useAppSelector(selectIsFacilitator)
   const aiEnabled = useAppSelector((state) => state.ui.aiEnabled)
   const aiBusy = useAppSelector(selectAiStatus) != null
-  const used = useAppSelector(selectRetro)?.ai_regroups ?? 0
-  const left = MAX_REGROUPS - used
-  if (!isFacilitator || !aiEnabled || left <= 0) return null
+  if (!isFacilitator || !aiEnabled) return null
 
   return (
     <button
@@ -448,11 +445,10 @@ function RegroupButton() {
       className="btn btn-ghost btn-sm gap-1.5"
       disabled={aiBusy}
       onClick={() => dispatch(regroupIdeas())}
-      title={`Group related ideas that aren't in a group yet. Existing groups stay as they are. ${left} of ${MAX_REGROUPS} re-runs left.`}
+      title="Group related ideas that aren't in a group yet. Existing groups stay as they are."
     >
       <span className="hero-sparkles-micro size-4" aria-hidden="true" />
       Re-run grouping
-      <span className="badge badge-ghost badge-sm font-normal">{left} left</span>
     </button>
   )
 }
