@@ -122,7 +122,7 @@ and blocks edits; if it fails or takes longer than 45s, the room unblocks and ca
 | `GCP_PROJECT` | Enables Gemini grouping (unset = off) |
 | `AI_ALLOWED_DOMAINS` | Comma-separated Google Workspace domains that may use AI. Unset or empty allows nobody |
 | `GCP_LOCATION` | Vertex AI location, default `global` |
-| `GEMINI_MODEL` | Default `gemini-2.5-flash` |
+| `GEMINI_MODEL` | Default `gemini-3.1-flash-lite` |
 | `GOOGLE_APPLICATION_CREDENTIALS` | ADC file (service account, user, or impersonated). Set by the dev container; on Cloud Run omit it to use the attached service account |
 | `SENDGRID_API_KEY` | Sends the action-items email on close (prod). Unset = emails are only logged, with a boot warning |
 | `MAIL_FROM` | Sender, e.g. `"Remote Retro" <retro@example.com>`; default `"Remote Retro" <no-reply@remoteretro.local>` (warns in prod) |

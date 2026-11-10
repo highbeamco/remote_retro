@@ -59,7 +59,8 @@ defmodule RemoteRetro.AI.Gemini do
 
   defp post(config, token, body) do
     [
-      url: endpoint(config[:project], config[:location], config[:model] || "gemini-2.5-flash"),
+      url:
+        endpoint(config[:project], config[:location], config[:model] || "gemini-3.1-flash-lite"),
       json: body,
       auth: {:bearer, token},
       receive_timeout: @receive_timeout,
