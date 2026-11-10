@@ -46,7 +46,7 @@ config :remote_retro, :ai,
   enabled: System.get_env("GCP_PROJECT") not in [nil, ""],
   project: System.get_env("GCP_PROJECT"),
   location: System.get_env("GCP_LOCATION", "global"),
-  model: System.get_env("GEMINI_MODEL", "gemini-2.5-flash"),
+  model: System.get_env("GEMINI_MODEL", "gemini-3.1-flash-lite"),
   allowed_domains: allowed_domains
 
 if mail_from = System.get_env("MAIL_FROM") do

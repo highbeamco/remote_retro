@@ -9,7 +9,7 @@ defmodule RemoteRetro.AI.GeminiTest do
       [
         project: "proj",
         location: "global",
-        model: "gemini-2.5-flash",
+        model: "gemini-3.1-flash-lite",
         token: "test-token",
         req_options: [plug: {Req.Test, Gemini}, retry_delay: 0, retry_log_level: false]
       ],
@@ -36,7 +36,7 @@ defmodule RemoteRetro.AI.GeminiTest do
     assert conn.host == "aiplatform.googleapis.com"
 
     assert conn.request_path ==
-             "/v1/projects/proj/locations/global/publishers/google/models/gemini-2.5-flash:generateContent"
+             "/v1/projects/proj/locations/global/publishers/google/models/gemini-3.1-flash-lite:generateContent"
 
     assert Plug.Conn.get_req_header(conn, "authorization") == ["Bearer test-token"]
 
