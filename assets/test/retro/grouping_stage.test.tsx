@@ -127,17 +127,6 @@ describe("Re-run grouping", () => {
     expect(store.getState().ui.toasts.at(-1)?.message).toBe("Every idea is already in a group.")
   })
 
-  it("shows how many re-runs are left and hides once they're used", () => {
-    const { unmount } = renderWithStore(
-      <Grouping />,
-      setup(snapshot({ retro: retro({ stage: "grouping", ai_regroups: 1 }), ai_enabled: true })),
-    )
-    expect(screen.getByRole("button", { name: /re-run grouping/i })).toHaveTextContent("1 left")
-    unmount()
-    renderWithStore(<Grouping />, setup(snapshot({ retro: retro({ stage: "grouping", ai_regroups: 2 }), ai_enabled: true })))
-    expect(screen.queryByRole("button", { name: /re-run grouping/i })).not.toBeInTheDocument()
-  })
-
   it("is hidden for participants and when AI isn't configured", () => {
     const { unmount } = renderWithStore(
       <Grouping />,

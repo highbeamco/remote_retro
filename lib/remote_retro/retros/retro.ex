@@ -6,14 +6,12 @@ defmodule RemoteRetro.Retros.Retro do
   @ai_statuses ~w(grouping)
 
   @primary_key {:id, :binary_id, autogenerate: true}
-  @derive {Jason.Encoder,
-           only: [:id, :format, :stage, :facilitator_id, :ai_status, :ai_regroups, :inserted_at]}
+  @derive {Jason.Encoder, only: [:id, :format, :stage, :facilitator_id, :ai_status, :inserted_at]}
   schema "retros" do
     field :format, :string
     field :stage, :string, default: "lobby"
     field :ai_status, :string
     field :ai_grouped_at, :utc_datetime_usec
-    field :ai_regroups, :integer, default: 0
     field :action_items_emailed_digest, :string
     field :timer_duration_ms, :integer, default: 180_000
     field :timer_ends_at, :utc_datetime_usec

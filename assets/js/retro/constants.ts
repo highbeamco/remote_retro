@@ -29,9 +29,6 @@ export const MAX_IDEA_LENGTH = 500
 
 export const MAX_LABEL_LENGTH = 60
 
-// Must match RemoteRetro.Retros.max_regroups/0.
-export const MAX_REGROUPS = 2
-
 export const CATEGORIES_BY_FORMAT = {
   happy_sad_confused: ["happy", "sad", "confused"],
   start_stop_continue: ["start", "stop", "continue"],
