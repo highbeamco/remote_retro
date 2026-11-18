@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import { Provider } from "react-redux"
 import type { RetroChannel } from "../channel"
 import { makeStore } from "../store"
@@ -187,6 +187,22 @@ describe("Board cards", () => {
     expect(text.style.webkitLineClamp ?? "").toBe("")
     expect(text.className).toContain("whitespace-pre-wrap")
     expect(text.className).toContain("overflow-y-auto")
+  })
+
+  it("starts the body at the top, with the category as a labelled corner badge", () => {
+    setup({ ideas: [idea(1, 0, 0, 1)], groups: [group(1)] })
+    const el = card("idea 1")
+    const text = el.querySelector("p")!
+    expect(el.firstElementChild).toBe(text)
+    const badge = within(text).getByLabelText("Happy")
+    expect(badge).toHaveAttribute("role", "img")
+    expect(badge.parentElement!.className).toContain("float-right")
+  })
+
+  it("does not show the author's name", () => {
+    setup({ ideas: [idea(1, 0, 0, 1), { ...idea(2, 400, 0, 2), user_id: 2 }], groups: [group(1), group(2)] })
+    expect(card("idea 1")).not.toHaveTextContent("Ada")
+    expect(card("idea 2")).not.toHaveTextContent("Grace")
   })
 })
 

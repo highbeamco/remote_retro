@@ -8,6 +8,7 @@ import {
   selectMyVotesLeft,
   selectPresentUsers,
   selectRankedGroups,
+  selectVotingGroups,
 } from "../../js/retro/store/selectors"
 import { ideaUpserted } from "../../js/retro/store/slices"
 import {
@@ -80,6 +81,31 @@ describe("selectors", () => {
     const votes = [vote(1, 1, 20), vote(2, 1, 21), vote(3, 1, 22), vote(4, 2, 23), vote(5, 2, 23)]
     const ranked = selectRankedGroups(setup(snapshot({ ideas, groups, votes })).getState())
     expect(ranked.map((g) => g.id)).toEqual([23, 21, 22, 20])
+  })
+
+  it("orders voting groups by size then age, ignoring votes, the same for everyone", () => {
+    const ideas = [
+      idea({ id: 1, group_id: 20 }),
+      idea({ id: 2, group_id: 21 }),
+      idea({ id: 3, group_id: 21 }),
+      idea({ id: 4, group_id: 21 }),
+      idea({ id: 5, group_id: 22 }),
+      idea({ id: 6, group_id: 22 }),
+      idea({ id: 7, group_id: 23 }),
+      idea({ id: 8, group_id: 24 }),
+      idea({ id: 9, group_id: 24 }),
+      idea({ id: 10, group_id: 25, category: "action-item" }),
+    ]
+    // Out of id order; 23 is a labelled singleton; 25 holds only an action item.
+    const groups = [group(24), group(23, "Lone"), group(22), group(21), group(20), group(25)]
+    // Votes favour the singletons and differ per user; none of it may affect the order.
+    const votes = [vote(1, 1, 20), vote(2, 1, 20), vote(3, 2, 23), vote(4, 2, 23), vote(5, 2, 24)]
+    const s = snapshot({ ideas, groups, votes })
+    const order = (userId: number) => selectVotingGroups(setup(s, { userId }).getState()).map((g) => g.id)
+    expect(order(1)).toEqual([21, 22, 24, 20, 23])
+    expect(order(2)).toEqual(order(1))
+    // Later stages still rank by votes.
+    expect(selectRankedGroups(setup(s).getState()).map((g) => g.id)).toEqual([20, 23, 24, 21, 22])
   })
 
   it("keeps optimistic ideas at the end, in creation order", () => {

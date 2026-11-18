@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent, type KeyboardEvent } from "react"
+import { useId, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react"
 import { CATEGORY_META } from "../categories"
 import { CategoryIcon } from "./CategoryIcon"
 import { submitOnEnter } from "./keyboard"
@@ -13,11 +13,13 @@ interface IdeaFormProps {
   categories: readonly Category[]
   category: Category
   onCategoryChange: (category: Category) => void
+  /** Live status beside the character count (e.g. who's typing). */
+  status?: ReactNode
 }
 
 const TYPING_THROTTLE_MS = 2000
 
-export function IdeaForm({ categories, category, onCategoryChange }: IdeaFormProps) {
+export function IdeaForm({ categories, category, onCategoryChange, status }: IdeaFormProps) {
   const dispatch = useAppDispatch()
   const [body, setBody] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -45,20 +47,20 @@ export function IdeaForm({ categories, category, onCategoryChange }: IdeaFormPro
 
   return (
     <form onSubmit={submit} noValidate className="card bg-base-100 shadow-sm" aria-label="Submit an idea">
-      <div className="card-body gap-3 p-3 sm:p-4">
+      <div className="card-body gap-2 p-3">
         {/* On wide screens the row stretches, so the text box is exactly as tall as the
             category stack beside it. */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-          <fieldset className="sm:w-40 sm:shrink-0">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
+          <fieldset className="sm:w-36 sm:shrink-0">
             <legend className="sr-only">Category</legend>
             {/* Native radios (arrow keys move between them) styled as stacked buttons;
-                a single row on narrow screens. */}
+                a single touch-sized row on narrow screens. */}
             <div className="join w-full sm:join-vertical">
               {categories.map((c) => (
                 <label
                   key={c}
                   className={[
-                    "btn btn-md join-item flex-1 justify-start gap-2 font-medium sm:w-full sm:flex-none",
+                    "btn join-item flex-1 justify-start gap-2 font-medium sm:btn-sm sm:w-full sm:flex-none",
                     "has-[:checked]:z-10 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary",
                     "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary",
                   ].join(" ")}
@@ -71,7 +73,7 @@ export function IdeaForm({ categories, category, onCategoryChange }: IdeaFormPro
                     onChange={() => onCategoryChange(c)}
                     className="sr-only"
                   />
-                  <CategoryIcon category={c} />
+                  <CategoryIcon category={c} size="sm" />
                   {CATEGORY_META[c].label}
                 </label>
               ))}
@@ -97,12 +99,12 @@ export function IdeaForm({ categories, category, onCategoryChange }: IdeaFormPro
               onKeyDown={onKeyDown}
             />
           </div>
-          <button type="submit" className="btn btn-primary sm:self-start">
+          <button type="submit" className="btn btn-primary sm:btn-sm sm:self-start">
             <span className="hero-plus size-4" aria-hidden="true" />
             Add idea
           </button>
         </div>
-        <div className="flex items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-3 text-xs">
           {error ? (
             <span id={errorId} className="text-error">
               {error}
@@ -110,7 +112,8 @@ export function IdeaForm({ categories, category, onCategoryChange }: IdeaFormPro
           ) : (
             <span className="hidden text-base-content/50 sm:inline">Press Enter to submit, Shift+Enter for a new line.</span>
           )}
-          <span className="ml-auto">
+          <span className="ml-auto flex min-w-0 items-center gap-3">
+            {status}
             <CharCount value={body} />
           </span>
         </div>
