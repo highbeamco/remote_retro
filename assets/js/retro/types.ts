@@ -111,6 +111,8 @@ export interface PushEvents {
   "retro:stage": { stage: Stage }
   "retro:facilitator": { user_id: number }
   "user:typing": Record<string, never>
+  /** One of the picker's emoji (see emoji.ts); the server rejects anything else. */
+  "user:react": { emoji: string }
   "ai:regroup": Record<string, never>
   "timer:command": TimerCommand
   /** Dev only (see RemoteRetro.DevSeed). */
@@ -131,5 +133,7 @@ export interface BroadcastEvents {
   "vote:deleted": { id: number }
   "ai:error": { message: string }
   "user:typing": { user_id: number }
+  /** Sent to everyone, the sender included. */
+  "user:reaction": { user_id: number; emoji: string }
   "timer:updated": { timer: TimerState }
 }

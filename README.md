@@ -22,6 +22,8 @@ Tailwind v4 + daisyUI. Real-time over Phoenix Channels.
 - With Gemini enabled, entering Group & label does a conservative first pass: only clearly
   related ideas are grouped, and a group gets a title only when an obvious one exists. Nothing
   is auto-labeled later; unlabeled groups stay unlabeled.
+- In any stage, react with an emoji from the button by your name in the participant list: it
+  floats up everyone's screen and stays by your name for 15 seconds. Reactions aren't stored.
 - Closing the retro emails its action items (with owners and a link back) to each participant,
   one message per person. Re-opening sends nothing; closing again only sends if the action items
   changed since the last email.

@@ -94,6 +94,56 @@ export const presenceSlice = createSlice({
   },
 })
 
+export interface FloatingReaction {
+  id: number
+  emoji: string
+  /** Horizontal start, as a % of the viewport width. */
+  x: number
+  /** Sway amplitude in px; the sign picks which way it sways first. */
+  sway: number
+}
+
+/** Floating emoji on screen at once; the oldest go first, so spam can't pile up. */
+export const MAX_FLOATING_REACTIONS = 30
+
+let reactionSeq = 0
+
+export const reactionsSlice = createSlice({
+  name: "reactions",
+  initialState: {
+    /** Each person's latest reaction, shown by their name until it expires. */
+    byUser: {} as Record<number, { id: number; emoji: string }>,
+    floating: [] as FloatingReaction[],
+  },
+  reducers: {
+    reactionReceived: {
+      reducer: (state, action: PayloadAction<FloatingReaction & { userId: number }>) => {
+        const { userId, ...reaction } = action.payload
+        state.byUser[userId] = { id: reaction.id, emoji: reaction.emoji }
+        state.floating.push(reaction)
+        if (state.floating.length > MAX_FLOATING_REACTIONS) {
+          state.floating.splice(0, state.floating.length - MAX_FLOATING_REACTIONS)
+        }
+      },
+      prepare: ({ userId, emoji }: { userId: number; emoji: string }) => ({
+        payload: {
+          userId,
+          emoji,
+          id: ++reactionSeq,
+          x: 4 + Math.random() * 84,
+          sway: (Math.random() < 0.5 ? -1 : 1) * (8 + Math.random() * 12),
+        },
+      }),
+    },
+    reactionExpired: (state, action: PayloadAction<number>) => {
+      delete state.byUser[action.payload]
+    },
+    floatingReactionDone: (state, action: PayloadAction<number>) => {
+      state.floating = state.floating.filter((r) => r.id !== action.payload)
+    },
+  },
+})
+
 export interface TimerSliceState extends TimerState {
   /** performance.now() when this state arrived; a running timer counts down from here. */
   receivedAt: number
@@ -191,5 +241,6 @@ export const { groupUpserted, groupsReplaced } = groupsSlice.actions
 export const { voteAdded, voteRemoved } = votesSlice.actions
 export const { userUpserted } = usersSlice.actions
 export const { presenceSynced, userTyping } = presenceSlice.actions
+export const { reactionReceived, reactionExpired, floatingReactionDone } = reactionsSlice.actions
 export const { timerUpdated, timerCommandSent, timerCommandSettled } = timerSlice.actions
 export const { currentUserSet, devToolsEnabled, connectedChanged, toastShown, toastDismissed } = uiSlice.actions

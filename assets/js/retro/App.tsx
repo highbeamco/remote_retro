@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { AI_BUSY_SHORT, AiBusyOverlay } from "./components/AiBusyOverlay"
 import { ConnectionBanner } from "./components/ConnectionBanner"
 import { ErrorBoundary } from "./components/ErrorBoundary"
+import { FloatingReactions } from "./components/FloatingReactions"
 import { Header } from "./components/Header"
 import { Modal } from "./components/Modal"
 import { Toasts } from "./components/Toasts"
@@ -81,6 +82,7 @@ export function App() {
 
       {/* The open help dialog already shows the AI progress; don't stack a second message. */}
       <AiBusyOverlay hidden={helpOpen} />
+      <FloatingReactions />
       <Toasts />
     </div>
   )

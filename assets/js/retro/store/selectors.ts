@@ -171,6 +171,9 @@ export const selectContributors = createSelector(
 
 export const selectTypingUserIds = (state: RootState) => state.presence.typingUserIds
 
+export const selectReactionsByUser = (state: RootState) => state.reactions.byUser
+export const selectFloatingReactions = (state: RootState) => state.reactions.floating
+
 /** True once every online participant has spent all their votes. */
 /** Online participants who haven't used all their votes yet. */
 export const selectVotersRemaining = createSelector(

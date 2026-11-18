@@ -8,6 +8,8 @@ import {
   ideaRemoved,
   ideaUpserted,
   presenceSynced,
+  reactionExpired,
+  reactionReceived,
   retroUpdated,
   snapshotReceived,
   timerUpdated,
@@ -19,6 +21,8 @@ import {
 } from "./slices"
 
 const TYPING_TIMEOUT_MS = 3000
+/** How long a reaction stays by its sender's name. */
+export const REACTION_MS = 15_000
 
 /**
  * Maps every server broadcast onto a store action. `idea:dragged` is not handled
@@ -48,6 +52,14 @@ export function bindChannel(channel: RetroChannel, dispatch: AppDispatch): void 
       user_id,
       setTimeout(() => dispatch(userTyping({ userId: user_id, typing: false })), TYPING_TIMEOUT_MS),
     )
+  })
+
+  // A newer reaction from the same person replaces theirs and restarts the clock.
+  const reactionTimers = new Map<number, ReturnType<typeof setTimeout>>()
+  channel.on("user:reaction", ({ user_id, emoji }) => {
+    clearTimeout(reactionTimers.get(user_id))
+    dispatch(reactionReceived({ userId: user_id, emoji }))
+    reactionTimers.set(user_id, setTimeout(() => dispatch(reactionExpired(user_id)), REACTION_MS))
   })
 
   const presence = new Presence(channel.raw)
