@@ -1,4 +1,5 @@
 import { screen, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { IdeaGeneration } from "../../js/retro/stages/IdeaGeneration"
 import { ideaUpserted } from "../../js/retro/store/slices"
 import { idea, renderWithStore, setup, snapshot } from "./helpers"
@@ -25,6 +26,18 @@ describe("Idea cards (idea generation)", () => {
     const text = screen.getByText("Flaky CI")
     expect(within(text).getByRole("button", { name: "Edit" }).parentElement!.className).toContain("float-right")
     expect(text.parentElement!.children).toHaveLength(1)
+  })
+
+  it("keeps edit errors, count and actions on one row, tied to the text box", async () => {
+    renderWithStore(<IdeaGeneration />, setup(snapshot({ ideas }), { userId: 2 }))
+    await userEvent.click(within(cardFor("Flaky CI")).getByRole("button", { name: "Edit" }))
+    const box = screen.getByLabelText("Edit text")
+    await userEvent.clear(box)
+    await userEvent.click(screen.getByRole("button", { name: "Save" }))
+    expect(box).toHaveAccessibleDescription("Write something before submitting.")
+    expect(screen.getByRole("button", { name: "Save" }).parentElement).toBe(
+      screen.getByText("Write something before submitting.").parentElement,
+    )
   })
 
   it("keeps the controls' space but disables them while a new idea saves", () => {

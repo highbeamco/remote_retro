@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react"
+import { useId, useState, type ReactNode } from "react"
 import { isTempId } from "../store/thunks"
 import type { Idea } from "../types"
 import { CharCount } from "./CharCount"
@@ -18,6 +18,7 @@ export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProp
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(idea.body)
   const [error, setError] = useState<string | null>(null)
+  const errorId = useId()
   const pending = isTempId(idea.id)
 
   const save = async () => {
@@ -33,7 +34,7 @@ export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProp
   if (editing) {
     return (
       <li className="card bg-base-100 shadow-sm ring-2 ring-primary/40">
-        <div className="card-body gap-2 p-3">
+        <div className="card-body gap-1.5 p-2">
           <label className="sr-only" htmlFor={`edit-${idea.id}`}>
             Edit text
           </label>
@@ -44,6 +45,7 @@ export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProp
             value={draft}
             autoFocus
             aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
             onChange={(e) => {
               setDraft(e.target.value)
               if (error) setError(validateIdeaBody(e.target.value))
@@ -56,11 +58,12 @@ export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProp
               }
             }}
           />
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-error">{error}</span>
+          {/* Error, count and actions share one row to keep the editing card short. */}
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <span id={errorId} className="mr-auto text-xs text-error">
+              {error}
+            </span>
             <CharCount value={draft} />
-          </div>
-          <div className="flex justify-end gap-1">
             <button type="button" className="btn btn-ghost btn-xs" onClick={() => setEditing(false)}>
               Cancel
             </button>
@@ -75,12 +78,12 @@ export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProp
 
   return (
     <li className={`group card bg-base-100 shadow-sm transition-opacity ${pending ? "opacity-60" : ""}`}>
-      <div className="card-body gap-1 p-3">
-        <p className="text-sm break-words whitespace-pre-wrap">
+      <div className="card-body gap-1 px-2.5 py-2">
+        <p className="text-sm leading-snug break-words whitespace-pre-wrap">
           {canEdit && (
             // Beside the first line only (-my-0.5 trims it to one line); hidden while saving so the text doesn't reflow.
             <span
-              className={`float-right -my-0.5 ml-2 flex gap-0.5 text-base-content/50 opacity-70 group-hover:opacity-100 focus-within:opacity-100 ${pending ? "invisible" : ""}`}
+              className={`float-right -my-0.5 ml-1.5 flex gap-0.5 text-base-content/50 opacity-70 group-hover:opacity-100 focus-within:opacity-100 ${pending ? "invisible" : ""}`}
             >
               <button
                 type="button"
@@ -94,7 +97,7 @@ export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProp
                   setEditing(true)
                 }}
               >
-                <span className="hero-pencil-square-micro size-4" aria-hidden="true" />
+                <span className="hero-pencil-square-micro size-3.5" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -104,7 +107,7 @@ export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProp
                 disabled={pending}
                 onClick={onDelete}
               >
-                <span className="hero-trash-micro size-4" aria-hidden="true" />
+                <span className="hero-trash-micro size-3.5" aria-hidden="true" />
               </button>
             </span>
           )}
