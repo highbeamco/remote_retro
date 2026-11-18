@@ -56,19 +56,24 @@ describe("Voting", () => {
     expect(screen.getByText("2 votes from you")).toBeInTheDocument()
   })
 
-  it("clamps long text with a toggle that stays out of headings and button names", async () => {
-    Object.defineProperty(HTMLElement.prototype, "scrollHeight", { configurable: true, get: () => 100 })
-    try {
-      renderWithStore(<Voting />, setup(snap()))
-      expect(screen.getByRole("heading", { name: "Flaky CI" })).toBeInTheDocument()
-      expect(screen.getByRole("button", { name: "Vote for Flaky CI" })).toBeInTheDocument()
-      const more = within(screen.getByRole("article", { name: "Process" })).getAllByRole("button", { name: "more" })
-      expect(more).toHaveLength(3) // the title, then each idea
-      await userEvent.click(more[1])
-      expect(more[1]).toHaveAccessibleName("less")
-      expect(more[1]).toHaveAttribute("aria-expanded", "true")
-    } finally {
-      Reflect.deleteProperty(HTMLElement.prototype, "scrollHeight")
+  it("shows long titles and ideas in full, with no clamping or expand toggles", () => {
+    const long = "Our deploy pipeline breaks every other Friday ".repeat(10).trim()
+    const s = snapshot({
+      retro: retro({ stage: "voting" }),
+      ideas: [
+        idea({ id: 1, group_id: 10, body: `${long} (single)` }),
+        idea({ id: 2, group_id: 11, body: `${long} (grouped)` }),
+        idea({ id: 3, group_id: 11, body: "b" }),
+      ],
+      groups: [group(10), group(11, "Process")],
+    })
+    const { container } = renderWithStore(<Voting />, setup(s))
+    expect(screen.getByRole("heading", { name: `${long} (single)` })).toBeInTheDocument()
+    expect(screen.getByText(`${long} (grouped)`)).toBeInTheDocument()
+    expect(container.querySelector("[class*='line-clamp'], [class*='truncate']")).toBeNull()
+    // The vote control is each card's only button.
+    for (const card of screen.getAllByRole("article")) {
+      expect(within(card).getByRole("button")).toHaveAccessibleName(/^Vote for /)
     }
   })
 
