@@ -11,17 +11,22 @@ interface GroupCardProps {
   compact?: boolean
   /** Heading level for the title, to follow the page outline (styling doesn't change). */
   headingLevel?: 2 | 3
+  /** Outline the card (e.g. it holds your votes). */
+  highlighted?: boolean
 }
 
 /** A group of ideas; singletons show the lone idea's text as the title. */
-export function GroupCard({ group, footer, badge, compact = false, headingLevel = 3 }: GroupCardProps) {
+export function GroupCard({ group, footer, badge, compact = false, headingLevel = 3, highlighted = false }: GroupCardProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3"
   const title = groupTitle(group)
   const singleton = group.ideas.length === 1
   const titleId = `group-${group.id}-title`
 
   return (
-    <article aria-labelledby={titleId} className="card bg-base-100 shadow-sm">
+    <article
+      aria-labelledby={titleId}
+      className={`card bg-base-100 shadow-sm transition-shadow ${highlighted ? "ring-2 ring-primary/50" : ""}`}
+    >
       <div className={`card-body gap-2 ${compact ? "p-3" : "p-4"}`}>
         <div className="flex items-start gap-2">
           {badge}

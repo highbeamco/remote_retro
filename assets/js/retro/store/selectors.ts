@@ -103,6 +103,11 @@ export const selectGroupsWithIdeas = createSelector(
   },
 )
 
+/** Voting order: most ideas first, then oldest. Never by votes, so it's blind and the same for everyone. */
+export const selectVotingGroups = createSelector([selectGroupsWithIdeas], (groups) =>
+  [...groups].sort((a, b) => b.ideas.length - a.ideas.length || a.id - b.id),
+)
+
 /** Groups by total votes, most first (ties keep creation order). */
 /**
  * Most votes first; ties go to bigger groups (so lone ideas sink below groups with

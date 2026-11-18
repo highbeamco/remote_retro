@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react"
+import { screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { Voting } from "../../js/retro/stages/Voting"
 import { group, idea, mockChannel, renderWithStore, retro, setup, snapshot, vote } from "./helpers"
@@ -39,13 +39,41 @@ describe("Voting", () => {
     await userEvent.click(screen.getByRole("button", { name: "Remove a vote from Process" }))
     expect(push).toHaveBeenCalledWith("vote:delete", { id: 3 })
     expect(screen.getByText("1 vote left")).toBeInTheDocument()
+    // Last vote gone: the remove button goes away and focus lands on Vote.
+    expect(screen.queryByRole("button", { name: "Remove a vote from Process" })).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Vote for Process" })).toBeEnabled()
+    expect(screen.getByRole("button", { name: "Vote for Process" })).toHaveFocus()
   })
 
   it("hides other users' vote totals", () => {
     renderWithStore(<Voting />, setup(snap([vote(1, 2, 10), vote(2, 2, 10)])))
     expect(screen.queryByText(/2 votes/)).not.toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Remove a vote from Flaky CI" })).toBeDisabled()
+    expect(screen.queryByText(/from you/)).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Remove a vote from Flaky CI" })).not.toBeInTheDocument()
+  })
+
+  it("lists bigger groups first, then single ideas, whatever the votes", () => {
+    const s = snapshot({
+      retro: retro({ stage: "voting" }),
+      ideas: [
+        idea({ id: 1, group_id: 10, body: "Flaky CI" }),
+        idea({ id: 2, group_id: 11 }),
+        idea({ id: 3, group_id: 11 }),
+        idea({ id: 4, group_id: 12 }),
+        idea({ id: 5, group_id: 12 }),
+        idea({ id: 6, group_id: 12 }),
+        idea({ id: 7, group_id: 13, body: "Standups run long" }),
+      ],
+      groups: [group(10), group(11, "Process"), group(12, "Tooling"), group(13)],
+      votes: [vote(1, 1, 10), vote(2, 1, 10), vote(3, 2, 13)],
+    })
+    renderWithStore(<Voting />, setup(s))
+    const titles = (section: RegExp) =>
+      within(screen.getByRole("region", { name: section }))
+        .getAllByRole("heading", { level: 3 })
+        .map((h) => h.textContent)
+    expect(titles(/^Groups/)).toEqual(["Tooling", "Process"])
+    expect(titles(/^Single ideas/)).toEqual(["Flaky CI", "Standups run long"])
   })
 
   it("still shows the idea of a labelled group that's down to one idea", () => {
