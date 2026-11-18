@@ -334,6 +334,31 @@ defmodule RemoteRetroWeb.RetroChannelTest do
       assert_broadcast "user:typing", %{user_id: ^uid}
     end
 
+    test "a reaction goes to everyone, the sender included", %{facilitator: f} do
+      socket = room(f, retro_fixture(f))
+      uid = f.id
+      assert_reply push(socket, "user:react", %{"emoji" => "🎉"}), :ok, _
+      assert_broadcast "user:reaction", %{user_id: ^uid, emoji: "🎉"}
+      # Only the sender has joined, so this push proves it isn't excluded.
+      assert_push "user:reaction", %{user_id: ^uid, emoji: "🎉"}
+    end
+
+    test "reactions outside the picker's emoji are rejected", %{facilitator: f} do
+      socket = room(f, retro_fixture(f))
+
+      for payload <- [
+            %{"emoji" => "lol"},
+            %{"emoji" => ""},
+            %{"emoji" => "🎉🎉"},
+            %{"emoji" => 1},
+            %{}
+          ] do
+        assert_reply push(socket, "user:react", payload), :error, %{reason: "invalid"}
+      end
+
+      refute_broadcast "user:reaction", _
+    end
+
     test "unknown events are rejected", %{facilitator: f} do
       socket = room(f, retro_fixture(f))
       assert_reply push(socket, "bogus", %{}), :error, %{reason: "invalid"}

@@ -1,10 +1,12 @@
 import { useId, useState } from "react"
 import { VOTE_LIMIT } from "../constants"
+import { emojiName } from "../emoji"
 import { useAppDispatch, useAppSelector } from "../store/hooks"
 import {
   selectContributors,
   selectCurrentUserId,
   selectIsFacilitator,
+  selectReactionsByUser,
   selectRetro,
   selectStage,
   selectTypingUserIds,
@@ -13,6 +15,7 @@ import {
 } from "../store/selectors"
 import { handOffFacilitator } from "../store/thunks"
 import type { User } from "../types"
+import { AddReaction } from "./AddReaction"
 import { Avatar } from "./Avatar"
 import { ConfirmDialog } from "./ConfirmDialog"
 
@@ -64,13 +67,16 @@ function UserRow({ user, online, onHandOff }: { user: User; online: boolean; onH
   const isFacilitator = useAppSelector(selectIsFacilitator)
   const typing = useAppSelector(selectTypingUserIds)
   const voteCounts = useAppSelector(selectVoteCountsByUser)
+  const reaction = useAppSelector(selectReactionsByUser)[user.id]
 
   const stage = retro?.stage
   const facilitator = user.id === retro?.facilitator_id
   const votes = voteCounts[user.id] ?? 0
+  const me = user.id === currentUserId
 
   return (
-    <li className="group flex items-center gap-2 rounded-box px-1 py-1.5 hover:bg-base-200">
+    // `relative`: the reaction picker drops below the row.
+    <li className="group relative flex items-center gap-2 rounded-box px-1 py-1.5 hover:bg-base-200">
       <div className={`relative ${online ? "" : "opacity-50 grayscale"}`}>
         <Avatar user={user} />
         {online && (
@@ -81,12 +87,27 @@ function UserRow({ user, online, onHandOff }: { user: User; online: boolean; onH
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm leading-tight ${online ? "" : "text-base-content/60"}`}>
-          {user.name}
-          {user.id === currentUserId && <span className="text-base-content/50"> (you)</span>}
-          {/* The green dot / dimming is visual only. */}
-          <span className="sr-only">{online ? ", online" : ", offline"}</span>
-        </p>
+        <div className="flex min-w-0 items-center gap-1">
+          <p className={`min-w-0 truncate text-sm leading-tight ${online ? "" : "text-base-content/60"}`}>
+            {user.name}
+            {me && <span className="text-base-content/50"> (you)</span>}
+            {/* The green dot / dimming is visual only. */}
+            <span className="sr-only">{online ? ", online" : ", offline"}</span>
+          </p>
+          {/* Keyed so a new reaction pops in again. */}
+          {reaction && (
+            <span
+              key={reaction.id}
+              role="img"
+              aria-label={`Reacted with ${emojiName(reaction.emoji)}`}
+              title={emojiName(reaction.emoji)}
+              className="reaction-pop shrink-0 text-base leading-none"
+            >
+              {reaction.emoji}
+            </span>
+          )}
+          {me && <AddReaction />}
+        </div>
         <p className="flex items-center gap-1 text-xs text-base-content/60">
           {facilitator && <span className="badge badge-xs badge-primary">Facilitator</span>}
           {online && stage === "idea-generation" && typing.includes(user.id) && <span>typing…</span>}

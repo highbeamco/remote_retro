@@ -233,6 +233,19 @@ export const sendTyping = createAppAsyncThunk("presence/sendTyping", async (_: v
   await extra.channel.push("user:typing", {}).catch(() => undefined)
 })
 
+/** Nothing is shown until the server echoes it back, to everyone at once. */
+export const sendReaction = createAppAsyncThunk(
+  "reactions/send",
+  async (emoji: string, { dispatch, extra, rejectWithValue }) => {
+    try {
+      await extra.channel.push("user:react", { emoji })
+      return emoji
+    } catch (error) {
+      return rejectWithValue(report(dispatch, error, "Your reaction wasn't sent."))
+    }
+  },
+)
+
 /** Dev only: fill the retro with sample ideas. The server broadcasts a snapshot. */
 export const seedSampleIdeas = createAppAsyncThunk(
   "dev/seedIdeas",

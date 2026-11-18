@@ -10,7 +10,7 @@ defmodule RemoteRetroWeb.RetroChannel do
   """
   use RemoteRetroWeb, :channel
 
-  alias RemoteRetro.{Accounts, Groups, Ideas, Retros, Votes}
+  alias RemoteRetro.{Accounts, Groups, Ideas, Reactions, Retros, Votes}
   alias RemoteRetroWeb.Presence
   alias RemoteRetroWeb.RetroChannel.Reply
 
@@ -179,6 +179,16 @@ defmodule RemoteRetroWeb.RetroChannel do
   def handle_in("user:typing", _params, socket) do
     broadcast_from!(socket, "user:typing", %{user_id: user_id(socket)})
     Reply.ok(socket, %{})
+  end
+
+  # Sent to everyone, the sender included, so all screens show it at the same moment.
+  def handle_in("user:react", %{"emoji" => emoji}, socket) do
+    if Reactions.valid?(emoji) do
+      broadcast!(socket, "user:reaction", %{user_id: user_id(socket), emoji: emoji})
+      Reply.ok(socket, %{})
+    else
+      Reply.error(socket, {:error, :invalid})
+    end
   end
 
   if Application.compile_env(:remote_retro, :dev_routes) do
