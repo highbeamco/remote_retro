@@ -56,6 +56,34 @@ describe("Voting", () => {
     expect(screen.getByText("2 votes from you")).toBeInTheDocument()
   })
 
+  it("keeps the add-vote button the same element in the same spot as votes are added", async () => {
+    let id = 100
+    const { channel } = mockChannel(() => Promise.resolve({ vote: vote(++id, 1, 10) }))
+    renderWithStore(<Voting />, setup(snap(), { channel }))
+    const add = screen.getByRole("button", { name: "Vote for Flaky CI" })
+    const parent = add.parentElement!
+    const className = add.className
+    const check = () => {
+      expect(screen.getByRole("button", { name: "Vote for Flaky CI" })).toBe(add)
+      expect(add.parentElement).toBe(parent)
+      expect(parent.lastElementChild).toBe(add)
+      expect(add.className).toBe(className)
+      expect(add.textContent).toBe("")
+    }
+    check()
+
+    await userEvent.click(add)
+    expect(await screen.findByText("1 vote from you")).toBeInTheDocument()
+    check()
+    await userEvent.click(add)
+    expect(await screen.findByText("2 votes from you")).toBeInTheDocument()
+    check()
+    await userEvent.click(add)
+    expect(await screen.findByText("3 votes from you")).toBeInTheDocument()
+    expect(add).toBeDisabled()
+    check()
+  })
+
   it("shows long titles and ideas in full, with no clamping or expand toggles", () => {
     const long = "Our deploy pipeline breaks every other Friday ".repeat(10).trim()
     const s = snapshot({
@@ -84,7 +112,7 @@ describe("Voting", () => {
     expect(screen.queryByRole("button", { name: "Remove a vote from Flaky CI" })).not.toBeInTheDocument()
   })
 
-  it("lists bigger groups first, then single ideas, whatever the votes", () => {
+  it("lists bigger groups first in one grid, whatever the votes", () => {
     const s = snapshot({
       retro: retro({ stage: "voting" }),
       ideas: [
@@ -100,12 +128,9 @@ describe("Voting", () => {
       votes: [vote(1, 1, 10), vote(2, 1, 10), vote(3, 2, 13)],
     })
     renderWithStore(<Voting />, setup(s))
-    const titles = (section: RegExp) =>
-      within(screen.getByRole("region", { name: section }))
-        .getAllByRole("heading", { level: 3 })
-        .map((h) => h.textContent)
-    expect(titles(/^Groups/)).toEqual(["Tooling", "Process"])
-    expect(titles(/^Single ideas/)).toEqual(["Flaky CI", "Standups run long"])
+    expect(screen.queryByRole("region")).not.toBeInTheDocument()
+    const titles = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)
+    expect(titles).toEqual(["Tooling", "Process", "Flaky CI", "Standups run long"])
   })
 
   it("still shows the idea of a labelled group that's down to one idea", () => {
