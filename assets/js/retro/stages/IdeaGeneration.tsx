@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type DragEvent } from "react"
 import { CATEGORY_META } from "../categories"
 import { CategoryIcon } from "../components/CategoryIcon"
 import { IdeaCard } from "../components/IdeaCard"
@@ -13,7 +13,7 @@ import {
   selectTypingUserIds,
   selectUsersById,
 } from "../store/selectors"
-import { deleteIdea, seedSampleIdeas, updateIdea } from "../store/thunks"
+import { deleteIdea, isTempId, seedSampleIdeas, updateIdea } from "../store/thunks"
 import type { Category, Idea } from "../types"
 
 const TAB_PANEL_ID = "idea-category-panel"
@@ -38,15 +38,64 @@ function TypingIndicator() {
   )
 }
 
-function IdeaColumn({ category, ideas, showHeading = true }: { category: Category; ideas: Idea[]; showHeading?: boolean }) {
+/** Desktop drag state shared by the columns: the idea in flight and the column under it. */
+interface ColumnDrag {
+  dragging: Idea | null
+  over: Category | null
+  setDragging: (idea: Idea | null) => void
+  setOver: (category: Category | null) => void
+}
+
+interface IdeaColumnProps {
+  category: Category
+  ideas: Idea[]
+  categories: readonly Category[]
+  showHeading?: boolean
+  drag?: ColumnDrag
+}
+
+function IdeaColumn({ category, ideas, categories, showHeading = true, drag }: IdeaColumnProps) {
   const dispatch = useAppDispatch()
   const me = useAppSelector(selectCurrentUserId)
   const isFacilitator = useAppSelector(selectIsFacilitator)
   const meta = CATEGORY_META[category]
   const headingId = `column-${category}`
+  const moveTargets = categories.filter((c) => c !== category)
+  const move = (id: number, to: Category) => dispatch(updateIdea({ id, category: to }))
+  const dropAllowed = drag?.dragging != null && drag.dragging.category !== category
+  const dropActive = dropAllowed && drag?.over === category
+
+  const dropProps = drag && {
+    onDragOver: (e: DragEvent) => {
+      if (!dropAllowed) return
+      e.preventDefault()
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move"
+      if (drag.over !== category) drag.setOver(category)
+    },
+    onDragLeave: (e: DragEvent) => {
+      if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+      if (drag.over === category) drag.setOver(null)
+    },
+    onDrop: (e: DragEvent) => {
+      if (!dropAllowed) return
+      e.preventDefault()
+      void move(drag.dragging!.id, category)
+      // The card remounts in this column, so its own dragend never fires.
+      drag.setDragging(null)
+      drag.setOver(null)
+    },
+  }
 
   return (
-    <section aria-labelledby={headingId} className="flex h-full min-h-0 flex-col rounded-box bg-base-300/40 p-1.5">
+    <section
+      aria-labelledby={headingId}
+      {...dropProps}
+      className={`flex h-full min-h-0 flex-col rounded-box p-1.5 transition-colors ${
+        dropActive
+          ? "bg-primary/10 outline-2 outline-primary outline-dashed"
+          : `bg-base-300/40 ${dropAllowed ? "outline-2 outline-base-content/20 outline-dashed" : ""}`
+      }`}
+    >
       <h2
         id={headingId}
         className={`flex items-center gap-2 px-1.5 pt-1 pb-2 text-sm font-semibold ${showHeading ? "" : "sr-only"}`}
@@ -63,19 +112,42 @@ function IdeaColumn({ category, ideas, showHeading = true }: { category: Categor
       ) : (
         // Fills the column and scrolls only on overflow; side padding keeps card shadows unclipped.
         <ul className="-mx-1.5 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain px-1.5 pb-0.5 [scrollbar-width:thin]">
-          {ideas.map((idea) => (
-            <IdeaCard
-              key={idea.id}
-              idea={idea}
-              canEdit={idea.user_id === me || isFacilitator}
-              onSave={(body) => dispatch(updateIdea({ id: idea.id, body }))}
-              onDelete={() => dispatch(deleteIdea(idea.id))}
-            />
-          ))}
+          {ideas.map((idea) => {
+            const canEdit = idea.user_id === me || isFacilitator
+            return (
+              <IdeaCard
+                key={idea.id}
+                idea={idea}
+                canEdit={canEdit}
+                onSave={(body) => dispatch(updateIdea({ id: idea.id, body }))}
+                onDelete={() => dispatch(deleteIdea(idea.id))}
+                moveTargets={moveTargets}
+                onMove={(to) => move(idea.id, to)}
+                dragProps={drag && canEdit && !isTempId(idea.id) ? cardDragProps(idea, drag) : undefined}
+              />
+            )
+          })}
         </ul>
       )}
     </section>
   )
+}
+
+function cardDragProps(idea: Idea, drag: ColumnDrag) {
+  return {
+    draggable: true,
+    onDragStart: (e: DragEvent) => {
+      // Firefox only starts a drag once some data is set.
+      e.dataTransfer?.setData("application/x-retro-idea", String(idea.id))
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = "move"
+      drag.setDragging(idea)
+    },
+    onDragEnd: () => {
+      drag.setDragging(null)
+      drag.setOver(null)
+    },
+    className: `cursor-grab active:cursor-grabbing ${drag.dragging?.id === idea.id ? "opacity-40" : ""}`,
+  }
 }
 
 export function IdeaGeneration() {
@@ -83,6 +155,9 @@ export function IdeaGeneration() {
   const byCategory = useAppSelector(selectIdeasByCategory)
   const isDesktop = useIsDesktop()
   const [category, setCategory] = useState<Category>(categories[0])
+  const [dragging, setDragging] = useState<Idea | null>(null)
+  const [over, setOver] = useState<Category | null>(null)
+  const drag: ColumnDrag = { dragging, over, setDragging, setOver }
 
   // h-full + flex-1 columns reach the bottom of the screen; the min-h floors make very short screens scroll the page instead.
   return (
@@ -94,7 +169,7 @@ export function IdeaGeneration() {
       {isDesktop ? (
         <div className="grid min-h-64 flex-1 grid-cols-3 grid-rows-[minmax(0,1fr)] gap-3">
           {categories.map((c) => (
-            <IdeaColumn key={c} category={c} ideas={byCategory[c] ?? []} />
+            <IdeaColumn key={c} category={c} ideas={byCategory[c] ?? []} categories={categories} drag={drag} />
           ))}
         </div>
       ) : (
@@ -121,7 +196,7 @@ export function IdeaGeneration() {
             ))}
           </div>
           <div role="tabpanel" id={TAB_PANEL_ID} aria-labelledby={tabId(category)} className="min-h-0 flex-1">
-            <IdeaColumn category={category} ideas={byCategory[category] ?? []} showHeading={false} />
+            <IdeaColumn category={category} ideas={byCategory[category] ?? []} categories={categories} showHeading={false} />
           </div>
         </div>
       )}

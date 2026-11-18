@@ -122,6 +122,36 @@ defmodule RemoteRetroWeb.RetroChannelTest do
       refute Ideas.get_idea(retro.id, mine.id)
     end
 
+    test "update moves an idea to another of the format's categories", %{
+      facilitator: f,
+      guest: g
+    } do
+      retro = retro_fixture(f, %{stage: "idea-generation"})
+      mine = idea_fixture(retro, g)
+      theirs = idea_fixture(retro, f)
+      guest = room(g, retro)
+      id = mine.id
+
+      assert_reply push(guest, "idea:update", %{"id" => id, "category" => "sad"}), :ok, %{
+        idea: %{category: "sad"}
+      }
+
+      assert_broadcast "idea:upserted", %{idea: %{id: ^id, category: "sad"}}
+
+      for category <- ["start", "action-item", nil] do
+        assert_reply push(guest, "idea:update", %{"id" => id, "category" => category}),
+                     :error,
+                     %{reason: "invalid", errors: %{category: _}}
+      end
+
+      assert_reply push(guest, "idea:update", %{"id" => theirs.id, "category" => "sad"}),
+                   :error,
+                   %{reason: "forbidden"}
+
+      assert Ideas.get_idea(retro.id, id).category == "sad"
+      assert Ideas.get_idea(retro.id, theirs.id).category == "happy"
+    end
+
     test "ids from another retro are not found", %{facilitator: f} do
       retro = retro_fixture(f, %{stage: "idea-generation"})
       other = retro_fixture(f, %{stage: "idea-generation"})

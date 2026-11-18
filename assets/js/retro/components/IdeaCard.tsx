@@ -1,6 +1,7 @@
-import { useId, useState, type ReactNode } from "react"
+import { useId, useState, type LiHTMLAttributes, type ReactNode } from "react"
+import { CATEGORY_META } from "../categories"
 import { isTempId } from "../store/thunks"
-import type { Idea } from "../types"
+import type { Category, Idea } from "../types"
 import { CharCount } from "./CharCount"
 import { validateIdeaBody } from "./validation"
 
@@ -11,10 +12,15 @@ interface IdeaCardProps {
   onDelete: () => void
   /** Extra content under the body (e.g. assignee). */
   meta?: ReactNode
+  /** Categories an editor can move the idea to, via a "Move to…" menu. */
+  moveTargets?: Category[]
+  onMove?: (category: Category) => void
+  /** Native drag-and-drop props for the (non-editing) card. */
+  dragProps?: LiHTMLAttributes<HTMLLIElement>
 }
 
 /** Ideas are anonymous: the card never shows who wrote it. */
-export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProps) {
+export function IdeaCard({ idea, canEdit, onSave, onDelete, meta, moveTargets = [], onMove, dragProps }: IdeaCardProps) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(idea.body)
   const [error, setError] = useState<string | null>(null)
@@ -77,7 +83,7 @@ export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProp
   }
 
   return (
-    <li className={`group card bg-base-100 shadow-sm transition-opacity ${pending ? "opacity-60" : ""}`}>
+    <li {...dragProps} className={`group card bg-base-100 shadow-sm transition-opacity ${pending ? "opacity-60" : ""} ${dragProps?.className ?? ""}`}>
       <div className="card-body gap-1 px-2.5 py-2">
         <p className="text-sm leading-snug break-words whitespace-pre-wrap">
           {canEdit && (
@@ -99,6 +105,28 @@ export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProp
               >
                 <span className="hero-pencil-square-micro size-3.5" aria-hidden="true" />
               </button>
+              {onMove && moveTargets.length > 0 && (
+                // A transparent native select over an icon: compact, yet keyboard and screen-reader friendly.
+                <span className="btn btn-ghost btn-xs btn-square relative focus-within:outline-2 focus-within:outline-primary" title="Move to…">
+                  <span className="hero-arrows-right-left-micro size-3.5" aria-hidden="true" />
+                  <select
+                    aria-label="Move to category"
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                    value=""
+                    disabled={pending}
+                    onChange={(e) => onMove(e.target.value as Category)}
+                  >
+                    <option value="" disabled>
+                      Move to…
+                    </option>
+                    {moveTargets.map((c) => (
+                      <option key={c} value={c}>
+                        {CATEGORY_META[c].label}
+                      </option>
+                    ))}
+                  </select>
+                </span>
+              )}
               <button
                 type="button"
                 className="btn btn-ghost btn-xs btn-square hover:text-error"

@@ -50,7 +50,7 @@ defmodule RemoteRetro.Ideas.Idea do
   defp validate_content(changeset) do
     changeset
     |> update_change(:body, &String.trim/1)
-    |> validate_required([:body])
+    |> validate_required([:body, :category])
     |> validate_length(:body, max: @max_body)
     |> validate_inclusion(:category, Formats.all_categories())
     |> validate_assignee()
