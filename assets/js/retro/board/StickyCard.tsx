@@ -144,7 +144,6 @@ export const StickyCard = memo(function StickyCard({ idea, color, scale, disable
   const x = remote && !dragging ? remote.x : idea.x
   const y = remote && !dragging ? remote.y : idea.y
   const dragger = remote ? users[remote.userId] : undefined
-  const author = users[idea.user_id]
 
   return (
     <div
@@ -183,7 +182,6 @@ export const StickyCard = memo(function StickyCard({ idea, color, scale, disable
       {/* Chrome budget (CARD_CHROME 44 in constants.ts): 2x8 padding + 20 header + 2 margin + up to 2x3 border. */}
       <div className="mb-0.5 flex h-5 shrink-0 items-center gap-1 text-xs text-base-content/60">
         <CategoryIcon category={idea.category} size="sm" labelled />
-        <span className="truncate">{author?.given_name ?? ""}</span>
         {dragger && (
           <span className="ml-auto flex items-center gap-1 text-accent" aria-label={`${dragger.given_name} is moving this`}>
             {dragger.picture ? (

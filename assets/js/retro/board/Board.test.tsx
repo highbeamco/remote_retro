@@ -188,6 +188,12 @@ describe("Board cards", () => {
     expect(text.className).toContain("whitespace-pre-wrap")
     expect(text.className).toContain("overflow-y-auto")
   })
+
+  it("does not show the author's name", () => {
+    setup({ ideas: [idea(1, 0, 0, 1), { ...idea(2, 400, 0, 2), user_id: 2 }], groups: [group(1), group(2)] })
+    expect(card("idea 1")).not.toHaveTextContent("Ada")
+    expect(card("idea 2")).not.toHaveTextContent("Grace")
+  })
 })
 
 describe("labelWidth()", () => {

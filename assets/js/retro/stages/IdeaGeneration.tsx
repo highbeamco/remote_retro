@@ -34,7 +34,6 @@ function IdeaColumn({ category, ideas, showHeading = true }: { category: Categor
   const dispatch = useAppDispatch()
   const me = useAppSelector(selectCurrentUserId)
   const isFacilitator = useAppSelector(selectIsFacilitator)
-  const users = useAppSelector(selectUsersById)
   const meta = CATEGORY_META[category]
   const headingId = `column-${category}`
 
@@ -60,7 +59,6 @@ function IdeaColumn({ category, ideas, showHeading = true }: { category: Categor
             <IdeaCard
               key={idea.id}
               idea={idea}
-              author={users[idea.user_id]}
               canEdit={idea.user_id === me || isFacilitator}
               onSave={(body) => dispatch(updateIdea({ id: idea.id, body }))}
               onDelete={() => dispatch(deleteIdea(idea.id))}

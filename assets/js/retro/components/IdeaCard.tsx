@@ -1,12 +1,11 @@
 import { useState, type ReactNode } from "react"
 import { isTempId } from "../store/thunks"
-import type { Idea, User } from "../types"
+import type { Idea } from "../types"
 import { CharCount } from "./CharCount"
 import { validateIdeaBody } from "./validation"
 
 interface IdeaCardProps {
   idea: Idea
-  author?: User
   canEdit: boolean
   onSave: (body: string) => Promise<unknown> | void
   onDelete: () => void
@@ -14,7 +13,8 @@ interface IdeaCardProps {
   meta?: ReactNode
 }
 
-export function IdeaCard({ idea, author, canEdit, onSave, onDelete, meta }: IdeaCardProps) {
+/** Ideas are anonymous: the card never shows who wrote it. */
+export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProps) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(idea.body)
   const [error, setError] = useState<string | null>(null)
@@ -77,35 +77,38 @@ export function IdeaCard({ idea, author, canEdit, onSave, onDelete, meta }: Idea
     <li className={`group card bg-base-100 shadow-sm transition-opacity ${pending ? "opacity-60" : ""}`}>
       <div className="card-body gap-1 p-3">
         <p className="text-sm break-words whitespace-pre-wrap">{idea.body}</p>
-        <div className="flex items-center justify-between gap-2 text-xs text-base-content/50">
-          {meta ? <div className="min-w-0">{meta}</div> : <span className="truncate">{author?.given_name}</span>}
-          {canEdit && !pending && (
-            <span className="flex gap-0.5 opacity-70 group-hover:opacity-100 focus-within:opacity-100">
-              <button
-                type="button"
-                className="btn btn-ghost btn-xs btn-square"
-                aria-label="Edit"
-                title="Edit"
-                onClick={() => {
-                  setDraft(idea.body)
-                  setError(null)
-                  setEditing(true)
-                }}
-              >
-                <span className="hero-pencil-square-micro size-4" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost btn-xs btn-square hover:text-error"
-                aria-label="Delete"
-                title="Delete"
-                onClick={onDelete}
-              >
-                <span className="hero-trash-micro size-4" aria-hidden="true" />
-              </button>
-            </span>
-          )}
-        </div>
+        {/* No footer when there's nothing to show; min-h keeps it steady while a new idea is pending. */}
+        {(meta || canEdit) && (
+          <div className="flex min-h-6 items-center gap-2 text-xs text-base-content/50">
+            {meta && <div className="min-w-0">{meta}</div>}
+            {canEdit && !pending && (
+              <span className="ml-auto flex gap-0.5 opacity-70 group-hover:opacity-100 focus-within:opacity-100">
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs btn-square"
+                  aria-label="Edit"
+                  title="Edit"
+                  onClick={() => {
+                    setDraft(idea.body)
+                    setError(null)
+                    setEditing(true)
+                  }}
+                >
+                  <span className="hero-pencil-square-micro size-4" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs btn-square hover:text-error"
+                  aria-label="Delete"
+                  title="Delete"
+                  onClick={onDelete}
+                >
+                  <span className="hero-trash-micro size-4" aria-hidden="true" />
+                </button>
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </li>
   )
