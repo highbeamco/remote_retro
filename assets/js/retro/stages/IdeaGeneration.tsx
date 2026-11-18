@@ -19,6 +19,11 @@ import type { Category, Idea } from "../types"
 const TAB_PANEL_ID = "idea-category-panel"
 const tabId = (category: Category) => `idea-tab-${category}`
 
+/** "Happy, 2 ideas" as one text node: split across spans, name computation can drop the spaces. */
+function CategoryName({ category, count }: { category: Category; count: number }) {
+  return <span className="sr-only">{`${CATEGORY_META[category].label}, ${count} ${count === 1 ? "idea" : "ideas"}`}</span>
+}
+
 function TypingIndicator() {
   const typing = useAppSelector(selectTypingUserIds)
   const users = useAppSelector(selectUsersById)
@@ -47,12 +52,11 @@ function IdeaColumn({ category, ideas, showHeading = true }: { category: Categor
         className={`flex items-center gap-2 px-1.5 pt-1 pb-2 text-sm font-semibold ${showHeading ? "" : "sr-only"}`}
       >
         <CategoryIcon category={category} size="sm" />
-        {meta.label}
-        <span className="ml-auto text-xs font-normal tabular-nums text-base-content/50">
-          <span className="sr-only">, </span>
+        <span aria-hidden="true">{meta.label}</span>
+        <span className="ml-auto text-xs font-normal tabular-nums text-base-content/50" aria-hidden="true">
           {ideas.length}
-          <span className="sr-only"> {ideas.length === 1 ? "idea" : "ideas"}</span>
         </span>
+        <CategoryName category={category} count={ideas.length} />
       </h2>
       {ideas.length === 0 ? (
         <p className="px-2 py-6 text-center text-sm text-base-content/50">No ideas yet</p>
@@ -108,12 +112,11 @@ export function IdeaGeneration() {
                 onClick={() => setCategory(c)}
               >
                 <CategoryIcon category={c} size="sm" />
-                {CATEGORY_META[c].label}
-                <span className="text-xs opacity-60">
-                  <span className="sr-only">, </span>
+                <span aria-hidden="true">{CATEGORY_META[c].label}</span>
+                <span className="text-xs opacity-60" aria-hidden="true">
                   {byCategory[c]?.length ?? 0}
-                  <span className="sr-only"> ideas</span>
                 </span>
+                <CategoryName category={c} count={byCategory[c]?.length ?? 0} />
               </button>
             ))}
           </div>
