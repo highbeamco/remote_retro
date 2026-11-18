@@ -167,7 +167,8 @@ export const StickyCard = memo(function StickyCard({ idea, color, scale, disable
         dragging ? "z-20 cursor-grabbing shadow-xl" : blocked ? "cursor-not-allowed" : "cursor-grab",
         // Lift the card under the pointer (or keyboard focus) out of its stack so it can be read.
         dragging ? "" : "hover:z-10 hover:shadow-md focus-visible:z-10",
-        remote && !dragging ? "transition-transform duration-75 ease-linear" : "",
+        // Someone else is moving it: keep it (and its name tag) above the cards it passes.
+        remote && !dragging ? "z-10 transition-transform duration-75 ease-linear" : "",
       ].join(" ")}
       style={{
         width: CARD_W,
@@ -179,25 +180,29 @@ export const StickyCard = memo(function StickyCard({ idea, color, scale, disable
         touchAction: "none",
       }}
     >
-      {/* Chrome budget (CARD_CHROME 44 in constants.ts): 2x8 padding + 20 header + 2 margin + up to 2x3 border. */}
-      <div className="mb-0.5 flex h-5 shrink-0 items-center gap-1 text-xs text-base-content/60">
-        <CategoryIcon category={idea.category} size="sm" labelled />
-        {dragger && (
-          <span className="ml-auto flex items-center gap-1 text-accent" aria-label={`${dragger.given_name} is moving this`}>
-            {dragger.picture ? (
-              <img src={dragger.picture} alt="" className="size-4 rounded-full ring-2 ring-accent" />
-            ) : (
-              <span className="hero-hand-raised size-4" aria-hidden="true" />
-            )}
-            <span className="truncate">{dragger.given_name}</span>
-          </span>
-        )}
-      </div>
-      {/* The card is tall enough for the whole body; scrolling is only a safety net. */}
+      {dragger && (
+        // Name tag on the top edge; it ends where the padding does, so it never covers text.
+        <span
+          className="pointer-events-none absolute -top-3 left-2 flex h-5 max-w-44 items-center gap-1 rounded-full bg-accent pr-2 pl-0.5 text-xs text-accent-content shadow-sm"
+          aria-label={`${dragger.given_name} is moving this`}
+        >
+          {dragger.picture ? (
+            <img src={dragger.picture} alt="" className="size-4 rounded-full" />
+          ) : (
+            <span className="hero-hand-raised-micro size-4" aria-hidden="true" />
+          )}
+          <span className="truncate">{dragger.given_name}</span>
+        </span>
+      )}
+      {/* CARD_CHROME (44) = 2x8 padding + up to 2x3 border + 22 spare for the line the badge may push down. */}
+      {/* The badge floats beside the first line only, so text wraps around it; scrolling is only a safety net. */}
       <p
         className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words"
         style={{ fontSize: BODY_FONT_PX, lineHeight: `${BODY_LINE_PX}px` }}
       >
+        <span className="float-right mt-0.5 ml-1.5 flex">
+          <CategoryIcon category={idea.category} size="xs" labelled />
+        </span>
         {idea.body}
       </p>
     </div>

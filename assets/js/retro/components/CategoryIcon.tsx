@@ -13,6 +13,7 @@ const STYLES: Record<Category, { icon: string; tone: string }> = {
 }
 
 const SIZES = {
+  xs: { box: "size-4", icon: "size-3" },
   sm: { box: "size-5", icon: "size-3.5" },
   md: { box: "size-6", icon: "size-4" },
 }

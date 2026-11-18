@@ -76,39 +76,41 @@ export function IdeaCard({ idea, canEdit, onSave, onDelete, meta }: IdeaCardProp
   return (
     <li className={`group card bg-base-100 shadow-sm transition-opacity ${pending ? "opacity-60" : ""}`}>
       <div className="card-body gap-1 p-3">
-        <p className="text-sm break-words whitespace-pre-wrap">{idea.body}</p>
-        {/* No footer when there's nothing to show; min-h keeps it steady while a new idea is pending. */}
-        {(meta || canEdit) && (
-          <div className="flex min-h-6 items-center gap-2 text-xs text-base-content/50">
-            {meta && <div className="min-w-0">{meta}</div>}
-            {canEdit && !pending && (
-              <span className="ml-auto flex gap-0.5 opacity-70 group-hover:opacity-100 focus-within:opacity-100">
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-xs btn-square"
-                  aria-label="Edit"
-                  title="Edit"
-                  onClick={() => {
-                    setDraft(idea.body)
-                    setError(null)
-                    setEditing(true)
-                  }}
-                >
-                  <span className="hero-pencil-square-micro size-4" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-xs btn-square hover:text-error"
-                  aria-label="Delete"
-                  title="Delete"
-                  onClick={onDelete}
-                >
-                  <span className="hero-trash-micro size-4" aria-hidden="true" />
-                </button>
-              </span>
-            )}
-          </div>
-        )}
+        <p className="text-sm break-words whitespace-pre-wrap">
+          {canEdit && (
+            // Beside the first line only (-my-0.5 trims it to one line); hidden while saving so the text doesn't reflow.
+            <span
+              className={`float-right -my-0.5 ml-2 flex gap-0.5 text-base-content/50 opacity-70 group-hover:opacity-100 focus-within:opacity-100 ${pending ? "invisible" : ""}`}
+            >
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs btn-square"
+                aria-label="Edit"
+                title="Edit"
+                disabled={pending}
+                onClick={() => {
+                  setDraft(idea.body)
+                  setError(null)
+                  setEditing(true)
+                }}
+              >
+                <span className="hero-pencil-square-micro size-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs btn-square hover:text-error"
+                aria-label="Delete"
+                title="Delete"
+                disabled={pending}
+                onClick={onDelete}
+              >
+                <span className="hero-trash-micro size-4" aria-hidden="true" />
+              </button>
+            </span>
+          )}
+          {idea.body}
+        </p>
+        {meta && <div className="min-w-0 text-xs text-base-content/50">{meta}</div>}
       </div>
     </li>
   )
