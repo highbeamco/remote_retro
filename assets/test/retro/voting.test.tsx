@@ -45,6 +45,33 @@ describe("Voting", () => {
     expect(screen.getByRole("button", { name: "Vote for Process" })).toHaveFocus()
   })
 
+  it("keeps focus in the control when spending your last vote", async () => {
+    const { channel } = mockChannel(() => Promise.resolve({ vote: vote(9, 1, 11) }))
+    renderWithStore(<Voting />, setup(snap([vote(1, 1, 10), vote(2, 1, 11)]), { channel }))
+
+    await userEvent.click(screen.getByRole("button", { name: "Vote for Process" }))
+    expect(await screen.findByText("All votes used")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Vote for Process" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Remove a vote from Process" })).toHaveFocus()
+    expect(screen.getByText("2 votes from you")).toBeInTheDocument()
+  })
+
+  it("clamps long text with a toggle that stays out of headings and button names", async () => {
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", { configurable: true, get: () => 100 })
+    try {
+      renderWithStore(<Voting />, setup(snap()))
+      expect(screen.getByRole("heading", { name: "Flaky CI" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Vote for Flaky CI" })).toBeInTheDocument()
+      const more = within(screen.getByRole("article", { name: "Process" })).getAllByRole("button", { name: "more" })
+      expect(more).toHaveLength(3) // the title, then each idea
+      await userEvent.click(more[1])
+      expect(more[1]).toHaveAccessibleName("less")
+      expect(more[1]).toHaveAttribute("aria-expanded", "true")
+    } finally {
+      Reflect.deleteProperty(HTMLElement.prototype, "scrollHeight")
+    }
+  })
+
   it("hides other users' vote totals", () => {
     renderWithStore(<Voting />, setup(snap([vote(1, 2, 10), vote(2, 2, 10)])))
     expect(screen.queryByText(/2 votes/)).not.toBeInTheDocument()

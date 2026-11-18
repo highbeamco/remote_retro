@@ -23,58 +23,67 @@ export function VotesLeft({ left }: { left: number }) {
   )
 }
 
-/** Your votes on this group as dots, then remove/add. Quiet until you vote. */
-function VoteControls({ group, votesLeft }: { group: GroupWithIdeas; votesLeft: number }) {
+/** Beside the title: a quiet "+ Vote", then a tinted "− ●● +" stepper. Fixed width so voting never rewraps the title. */
+function VoteControl({ group, votesLeft }: { group: GroupWithIdeas; votesLeft: number }) {
   const dispatch = useAppDispatch()
   const mine = group.myVoteCount
   const name = groupTitle(group) ?? "this group"
-  const voteButton = useRef<HTMLButtonElement>(null)
-  const refocus = useRef(false)
+  const addButton = useRef<HTMLButtonElement>(null)
+  const removeButton = useRef<HTMLButtonElement>(null)
+  const refocus = useRef<"add" | "remove" | null>(null)
 
-  // The remove button disappears with your last vote here; keep keyboard focus on the card.
+  // Keep keyboard focus here when the clicked button vanishes (last vote removed) or disables (last vote spent).
   useEffect(() => {
-    if (refocus.current && mine === 0) voteButton.current?.focus()
-    refocus.current = false
-  }, [mine])
+    if (refocus.current === "add" && mine === 0) addButton.current?.focus()
+    if (refocus.current === "remove" && votesLeft === 0) removeButton.current?.focus()
+    refocus.current = null
+  }, [mine, votesLeft])
 
   return (
-    <div className="flex items-center justify-end gap-1">
-      {mine > 0 && (
-        <>
-          <span className="mr-1 flex gap-1" aria-hidden="true">
-            {Array.from({ length: mine }, (_, i) => (
-              <span key={i} className="size-2 rounded-full bg-primary" />
-            ))}
-          </span>
-          <span className="sr-only">
-            {mine} {mine === 1 ? "vote" : "votes"} from you
-          </span>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm btn-square text-base-content/60"
-            onClick={() => {
-              refocus.current = mine === 1
-              dispatch(retractVoteOnGroup(group.id))
-            }}
-            aria-label={`Remove a vote from ${name}`}
-            title="Remove a vote"
-          >
-            <span className="hero-minus-micro size-4" aria-hidden="true" />
-          </button>
-        </>
-      )}
-      <button
-        ref={voteButton}
-        type="button"
-        className="btn btn-ghost btn-sm gap-1"
-        disabled={votesLeft === 0}
-        onClick={() => dispatch(createVote(group.id))}
-        aria-label={`Vote for ${name}`}
-        title="Vote"
-      >
-        <span className={`hero-plus-micro size-4 ${votesLeft > 0 ? "text-primary" : ""}`} aria-hidden="true" />
-        Vote
-      </button>
+    <div className="flex w-19 shrink-0 justify-end">
+      <div className={`flex items-center rounded-full ${mine > 0 ? "bg-primary/15" : ""}`}>
+        {mine > 0 && (
+          <>
+            <button
+              ref={removeButton}
+              type="button"
+              className="btn btn-ghost btn-xs btn-circle text-base-content/70"
+              onClick={() => {
+                if (mine === 1) refocus.current = "add"
+                dispatch(retractVoteOnGroup(group.id))
+              }}
+              aria-label={`Remove a vote from ${name}`}
+              title="Remove a vote"
+            >
+              <span className="hero-minus-micro size-3.5" aria-hidden="true" />
+            </button>
+            <span className="flex gap-0.5 px-0.5" aria-hidden="true">
+              {Array.from({ length: mine }, (_, i) => (
+                <span key={i} className="size-2 rounded-full bg-primary" />
+              ))}
+            </span>
+            <span className="sr-only">
+              {mine} {mine === 1 ? "vote" : "votes"} from you
+            </span>
+          </>
+        )}
+        {/* Same element in both states, so focus stays put as the control changes shape. */}
+        <button
+          ref={addButton}
+          type="button"
+          className={`btn btn-ghost btn-xs rounded-full text-base-content/70 ${mine > 0 ? "btn-circle" : "gap-0.5"}`}
+          disabled={votesLeft === 0}
+          onClick={() => {
+            if (votesLeft === 1) refocus.current = "remove"
+            dispatch(createVote(group.id))
+          }}
+          aria-label={`Vote for ${name}`}
+          title="Vote"
+        >
+          <span className="hero-plus-micro size-3.5" aria-hidden="true" />
+          {mine === 0 && "Vote"}
+        </button>
+      </div>
     </div>
   )
 }
@@ -101,12 +110,7 @@ function GroupSection({ id, title, groups, votesLeft }: GroupSectionProps) {
       <ul className="columns-1 gap-3 md:columns-2 xl:columns-3 2xl:columns-4">
         {groups.map((group) => (
           <li key={group.id} className="mb-3 break-inside-avoid">
-            <GroupCard
-              compact
-              group={group}
-              highlighted={group.myVoteCount > 0}
-              footer={<VoteControls group={group} votesLeft={votesLeft} />}
-            />
+            <GroupCard compact group={group} actions={<VoteControl group={group} votesLeft={votesLeft} />} />
           </li>
         ))}
       </ul>
